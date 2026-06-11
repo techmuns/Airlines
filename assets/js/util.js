@@ -5,7 +5,7 @@
 
   /* --- inline SVG icons (stroke uses currentColor) --- */
   var ICONS = {
-    plane: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 15.5v-1.7l-7.5-4.6V3.6a1.5 1.5 0 0 0-3 0v5.6L3 13.8v1.7l7.5-2.3v4.9l-2 1.4v1.4l3.5-1 3.5 1v-1.4l-2-1.4v-4.9z"/></svg>',
+    plane: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 16.21v-1.6a.9.9 0 0 0-.46-.78L14 9.5V4a2 2 0 0 0-4 0v5.5l-7.54 4.33a.9.9 0 0 0-.46.78v1.6c0 .3.29.52.58.43L10 14.2v4.04l-1.78 1.32a.6.6 0 0 0-.22.47v.74c0 .26.25.45.5.38L12 20.4l3.5.75c.25.07.5-.12.5-.38v-.74a.6.6 0 0 0-.22-.47L14 18.24V14.2l7.42 2.44c.29.09.58-.13.58-.43Z"/></svg>',
     globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>',
     people: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17.5" cy="9" r="2.3"/><path d="M15.5 19a4.5 4.5 0 0 1 6-4.2"/></svg>',
     calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/></svg>',
