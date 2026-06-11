@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Airline Demand Monitor — Components (polished)
+   Airline Demand Monitor — Components (soft premium, blue-tinted)
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -10,13 +10,13 @@
 .kpi {
   flex: 1 1 0;
   position: relative;
-  padding: 14px 18px;
+  padding: 15px 18px;
   display: flex;
   gap: 12px;
   align-items: center;
 }
-.kpi + .kpi::before {            /* inset vertical separator */
-  content: ""; position: absolute; left: 0; top: 15px; bottom: 15px;
+.kpi + .kpi::before {
+  content: ""; position: absolute; left: 0; top: 16px; bottom: 16px;
   width: 1px; background: var(--border);
 }
 .kpi__tile {
@@ -29,20 +29,20 @@
 }
 .kpi__tile svg { width: 19px; height: 19px; }
 .kpi__label {
-  font-size: 9.5px; font-weight: 700; letter-spacing: .55px;
+  font-size: 9.5px; font-weight: 500; letter-spacing: .55px;
   text-transform: uppercase; color: var(--text-muted);
 }
 .kpi__value {
-  font-size: 21px; font-weight: 700; color: var(--navy-850);
-  line-height: 1.12; margin-top: 3px; letter-spacing: -.2px;
+  font-size: 21px; font-weight: 600; color: var(--navy-850);
+  line-height: 1.12; margin-top: 4px; letter-spacing: -.2px;
 }
 .kpi__value.pos { color: var(--pos); }
 .kpi__value.neg { color: var(--neg); }
-.kpi__sub { font-size: 10.5px; color: var(--text-faint); margin-top: 3px; }
+.kpi__sub { font-size: 10.5px; font-weight: 400; color: var(--text-faint); margin-top: 3px; }
 .hero__note {
   border-top: 1px solid var(--border);
   padding: 8px 18px;
-  font-size: 10.5px;
+  font-size: 10.5px; font-weight: 400;
   color: var(--text-faint);
   display: flex; align-items: center; gap: 7px;
 }
@@ -52,22 +52,23 @@
 /* --------------------------------------------------------------------------
    Chart cards & grids
    -------------------------------------------------------------------------- */
-.chart-card { padding: 14px 16px 12px; display: flex; flex-direction: column; }
-.chart-card > div:first-child { min-height: 42px; }   /* align canvases across a row */
+.chart-card { padding: 14px 16px 13px; display: flex; flex-direction: column; }
+.chart-card > div:first-child { min-height: 42px; }
 .chart-card__canvas {
   position: relative;
-  margin-top: 8px;
-  height: 200px;
-  background: #fcfdff;
-  border: 1px solid #eef1f7;
-  border-radius: 8px;
+  margin-top: 9px;
+  height: 210px;
+  background: var(--card-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  box-shadow: inset 0 1px 2px rgba(40, 55, 90, .03);
 }
-.chart-card__canvas.tall { height: 230px; }
+.chart-card__canvas.tall { height: 234px; }
 
 /* TSA: 2x2 chart grid (wide charts, like the research exhibits) */
 .charts-2x2 { grid-template-columns: 1fr 1fr; }
 @media (max-width: 980px) { .charts-2x2 { grid-template-columns: 1fr; } }
-.charts-2x2 .chart-card__canvas { height: 224px; }
+.charts-2x2 .chart-card__canvas { height: 244px; }
 
 /* TSA: four charts in a row (kept for narrow alt layouts) */
 .charts-4 { grid-template-columns: repeat(4, 1fr); }
@@ -77,7 +78,7 @@
 /* IATA: two hero charts side by side */
 .charts-2 { grid-template-columns: 1fr 1fr; }
 @media (max-width: 980px) { .charts-2 { grid-template-columns: 1fr; } }
-.hero-chart .chart-card__canvas { height: 268px; }
+.hero-chart .chart-card__canvas { height: 284px; }
 
 /* TSA: table (wider) + heatmap row */
 .tsa-split { grid-template-columns: 1.15fr 1fr; align-items: start; }
@@ -90,9 +91,9 @@
 table.data { font-size: 11.5px; }
 table.data thead th {
   position: sticky; top: 0; z-index: 1;
-  background: var(--bg-tint);
-  color: var(--navy-800);
-  font-size: 9.5px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+  background: #e7eef8;
+  color: var(--navy-700);
+  font-size: 9.5px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase;
   text-align: right;
   padding: 9px 14px;
   border-bottom: 1px solid var(--border-strong);
@@ -103,50 +104,47 @@ table.data tbody td:first-child { text-align: left; }
 table.data tbody td {
   padding: 7px 14px;
   text-align: right;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(40, 55, 90, .055);
   white-space: nowrap;
 }
-table.data tbody tr:nth-child(even) { background: #fbfcfe; }
-table.data tbody tr:hover { background: var(--blue-050); }
-table.data .date { font-weight: 600; color: var(--navy-800); }
-table.data .strong { font-weight: 700; color: var(--navy-850); }
-.pct.pos { color: var(--pos); font-weight: 600; }
-.pct.neg { color: var(--neg); font-weight: 600; }
+table.data tbody tr:nth-child(even) { background: rgba(255, 255, 255, .42); }
+table.data tbody tr:hover { background: rgba(90, 130, 189, .1); }
+table.data .date { font-weight: 500; color: var(--navy-700); }
+table.data .strong { font-weight: 600; color: var(--navy-850); }
+.pct.pos { color: var(--pos); font-weight: 500; }
+.pct.neg { color: var(--neg); font-weight: 500; }
 .muted-cell { color: var(--text-faint); }
 .table-foot {
   display: flex; flex-wrap: wrap; gap: 6px 20px;
   padding: 10px 16px;
   border-top: 1px solid var(--border);
-  font-size: 10.5px; color: var(--text-muted);
-  background: var(--bg-tint);
+  font-size: 10.5px; font-weight: 400; color: var(--text-muted);
+  background: var(--frost);
 }
 
 /* --------------------------------------------------------------------------
    Calendar heatmap (TSA)
    -------------------------------------------------------------------------- */
 .cal { padding: 14px 16px 16px; }
-.cal__nav {
-  display: flex; align-items: center; justify-content: center;
-  gap: 12px; margin-bottom: 12px;
-}
+.cal__nav { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 12px; }
 .cal__btn {
   width: 28px; height: 28px; border-radius: 8px;
-  border: 1px solid var(--border-strong); background: #fff;
+  border: 1px solid var(--border-strong); background: var(--frost);
   color: var(--navy-700); display: grid; place-items: center;
-  transition: background .15s;
+  transition: background .15s ease, box-shadow .15s ease;
 }
-.cal__btn:hover { background: var(--blue-050); }
+.cal__btn:hover { background: #fff; box-shadow: var(--shadow-sm); }
 .cal__btn:disabled { opacity: .35; cursor: default; }
 .cal__btn svg { width: 16px; height: 16px; }
 .cal__month {
   min-width: 144px; text-align: center;
-  font-weight: 700; font-size: 13px; color: var(--navy-850);
+  font-weight: 600; font-size: 13px; color: var(--navy-850);
   border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px;
-  background: var(--bg-tint);
+  background: var(--frost);
 }
 .cal__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
 .cal__dow {
-  text-align: center; font-size: 10px; font-weight: 700;
+  text-align: center; font-size: 10px; font-weight: 600;
   text-transform: uppercase; letter-spacing: .4px;
   color: var(--text-muted); padding-bottom: 2px;
 }
@@ -154,24 +152,24 @@ table.data .strong { font-weight: 700; color: var(--navy-850); }
   position: relative;
   min-height: 50px;
   border-radius: 7px;
-  border: 1px solid rgba(20, 33, 61, .04);
+  border: 1px solid rgba(40, 55, 90, .04);
   padding: 4px 6px;
-  background: #f5f7fb;
+  background: rgba(255, 255, 255, .5);
 }
 .cal__cell.is-out { background: transparent; border-color: transparent; }
 .cal__cell.lvl-high { background: var(--hm-strong-pos); }
 .cal__cell.lvl-mid  { background: var(--hm-neutral); }
 .cal__cell.lvl-low  { background: var(--hm-strong-neg); }
-.cal__day { font-size: 10px; font-weight: 700; color: var(--hm-ink); opacity: .72; }
+.cal__day { font-size: 10px; font-weight: 600; color: var(--hm-ink); opacity: .72; }
 .cal__cell.is-out .cal__day { color: var(--text-faint); opacity: .5; }
 .cal__val {
-  font-size: 12px; font-weight: 700; color: var(--navy-850);
+  font-size: 12px; font-weight: 600; color: var(--navy-850);
   font-variant-numeric: tabular-nums;
   position: absolute; left: 0; right: 0; bottom: 6px; text-align: center;
 }
 .cal__holiday {
   position: absolute; left: 5px; right: 5px; bottom: 3px;
-  font-size: 8px; font-weight: 700; letter-spacing: .2px;
+  font-size: 8px; font-weight: 600; letter-spacing: .2px;
   color: var(--neg); text-transform: uppercase; text-align: center;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -188,21 +186,21 @@ table.hm th, table.hm td { border: 1px solid var(--border); }
 
 table.hm thead .grp th {
   background: var(--navy-800); color: #fff;
-  font-size: 10.5px; font-weight: 700; letter-spacing: .4px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .4px;
   text-transform: uppercase; padding: 8px 11px; text-align: center;
   border-color: var(--navy-700);
 }
 table.hm thead .grp th.spacer { background: var(--navy-850); }
 table.hm thead .sub th {
-  background: #eef1f7; color: var(--navy-800);
-  font-size: 9.5px; font-weight: 700; letter-spacing: .3px;
+  background: #e7eef8; color: var(--navy-700);
+  font-size: 9.5px; font-weight: 600; letter-spacing: .3px;
   text-transform: uppercase; padding: 6px 10px; text-align: center;
   white-space: nowrap;
 }
 table.hm thead .sub th.rowlab,
-table.hm tbody td.rowlab { text-align: left; white-space: nowrap; background: #eef1f7; }
+table.hm tbody td.rowlab { text-align: left; white-space: nowrap; background: #e7eef8; }
 table.hm tbody td.rowlab {
-  font-weight: 700; color: var(--navy-800); background: var(--bg-tint);
+  font-weight: 600; color: var(--navy-700); background: var(--frost);
   padding: 8px 11px;
 }
 table.hm tbody td.rowlab .ico {
@@ -211,7 +209,7 @@ table.hm tbody td.rowlab .ico {
 }
 table.hm tbody td.rowlab .ico svg { width: 14px; height: 14px; }
 table.hm tbody td.val {
-  text-align: center; padding: 8px 11px; font-weight: 600;
+  text-align: center; padding: 8px 11px; font-weight: 500;
   color: var(--hm-ink); font-variant-numeric: tabular-nums;
   min-width: 76px;
 }
@@ -224,9 +222,9 @@ table.hm tbody tr.is-industry td.val { box-shadow: inset 0 0 0 9999px rgba(90, 1
 .fill-neu  { background: var(--hm-neutral); }
 .fill-mneg { background: var(--hm-mild-neg); }
 .fill-sneg { background: var(--hm-strong-neg); }
-.fill-none { background: #fff; color: var(--text-faint); }
+.fill-none { background: var(--frost); color: var(--text-faint); }
 
-.matrix-note { padding: 9px 14px 2px; font-size: 10.5px; color: var(--text-faint); }
+.matrix-note { padding: 9px 14px 2px; font-size: 10.5px; font-weight: 400; color: var(--text-faint); }
 
 /* --------------------------------------------------------------------------
    Insight cards (takeaways)
@@ -241,8 +239,6 @@ table.hm tbody tr.is-industry td.val { box-shadow: inset 0 0 0 9999px rgba(90, 1
   box-shadow: var(--shadow-sm);
 }
 .insight__icon svg { width: 18px; height: 18px; }
-.insight__title {
-  font-size: 13px; font-weight: 700; color: var(--navy-850); margin-bottom: 4px;
-}
-.insight__body { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
-.insight__body b { color: var(--text); font-weight: 700; }
+.insight__title { font-size: 13px; font-weight: 600; color: var(--navy-850); margin-bottom: 4px; }
+.insight__body { font-size: 12px; font-weight: 400; color: var(--text-muted); line-height: 1.5; }
+.insight__body b { color: var(--text); font-weight: 600; }

@@ -7,12 +7,12 @@
   var FONT = '"Inter", "Segoe UI", system-ui, sans-serif';
 
   var INK = {
-    navy: '#14315f',
+    navy: '#162f5c',
     navySoft: '#2c5391',
-    blue: '#8fb4e0',
-    grid: '#edeff3',
+    blue: '#7ba7da',
+    grid: '#e3e8f1',
     axis: '#8b94a6',
-    tick: '#67718a'
+    tick: '#5f6a80'
   };
 
   if (Chart) {
@@ -119,10 +119,10 @@
       data: { labels: labels, datasets: [{
         data: data,
         borderColor: o.color || INK.navy,
-        backgroundColor: o.fill ? 'rgba(20,49,95,.07)' : 'transparent',
+        backgroundColor: o.fill ? 'rgba(22,47,92,.09)' : 'transparent',
         fill: !!o.fill,
-        borderWidth: o.width || 1.6,
-        pointRadius: 0, pointHoverRadius: 3,
+        borderWidth: o.width || 2.0,
+        pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: o.color || INK.navy,
         tension: o.tension == null ? 0.25 : o.tension,
         spanGaps: true
       }]},
