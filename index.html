@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Airline Demand Monitor</title>
+  <meta name="description" content="Airline passenger demand and regional aviation traffic — a clean aviation research dashboard." />
+  <link rel="stylesheet" href="assets/css/theme.css" />
+  <link rel="stylesheet" href="assets/css/components.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-header__inner">
+      <div class="brand">
+        <div class="brand__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 15.5v-1.7l-7.5-4.6V3.6a1.5 1.5 0 0 0-3 0v5.6L3 13.8v1.7l7.5-2.3v4.9l-2 1.4v1.4l3.5-1 3.5 1v-1.4l-2-1.4v-4.9z"/></svg>
+        </div>
+        <div>
+          <div class="brand__title">Airline Demand Monitor</div>
+          <div class="brand__subtitle">Global Airline Traffic &amp; Regional Performance</div>
+        </div>
+      </div>
+      <div class="header-meta">
+        <div class="header-meta__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/></svg>
+        </div>
+        <div>
+          <div class="header-meta__line1" id="meta-asof">Data as of: …</div>
+          <div class="header-meta__line2" id="meta-period">Data Period: …</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Dashboard sections">
+    <button class="tab is-active" id="tab-tsa" role="tab">TSA Overview</button>
+    <button class="tab" id="tab-iata" role="tab">Airline Traffic &amp; Regional</button>
+  </nav>
+
+  <main class="container">
+    <div class="status-banner" id="status">Loading dashboard data…</div>
+    <section class="tabpanel" id="panel-tsa" role="tabpanel" aria-labelledby="tab-tsa"></section>
+    <section class="tabpanel" id="panel-iata" role="tabpanel" aria-labelledby="tab-iata" hidden></section>
+  </main>
+
+  <footer class="app-footer">
+    Airline Demand Monitor · TSA and IATA data are kept separate · The dashboard refreshes
+    automatically whenever new data is published · Preview uses sample data until the live feed is connected.
+  </footer>
+
+  <!-- vendored Chart.js (self-contained, no external CDN at runtime) -->
+  <script src="assets/js/lib/chart.umd.js"></script>
+  <!-- app modules (plain scripts, no build step) -->
+  <script defer src="assets/js/util.js"></script>
+  <script defer src="assets/js/calc.js"></script>
+  <script defer src="assets/js/charts.js"></script>
+  <script defer src="assets/js/heatmap.js"></script>
+  <script defer src="assets/js/tsa.js"></script>
+  <script defer src="assets/js/iata.js"></script>
+  <script defer src="assets/js/app.js"></script>
+</body>
+</html>
