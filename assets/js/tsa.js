@@ -81,19 +81,19 @@
 
     /* ---- B. Charts (prepare data; instantiate lazily) ---- */
     var monthly = C.monthlyAverages(days);
-    var myoy = C.monthlyYoY(monthly).filter(function (m) { return m.yoy != null; });
-    var dmaYoY = C.sevenDmaYoY(days, data.byDate, data.shift).filter(function (d) { return d.yoy != null; });
+    var ym = raw.yoy_monthly;            // published monthly YoY series (exhibit)
+    var dmaYoY = raw.yoy_7dma_daily;     // 7DMA-basis YoY series (exhibit)
 
-    var c1 = chartCard('TSA Passenger Throughput YoY %',
-      U.fmtMonthLong(myoy[0].key) + ' – ' + U.fmtMonthLong(myoy[myoy.length - 1].key), I.bars);
-    var c2 = chartCard('TSA Passenger Throughput YoY % — 7DMA Basis',
-      rangeDaily(dmaYoY, function (d) { return d.date; }), I.trend);
+    var c1 = chartCard('TSA Passenger Throughput, YoY %',
+      U.fmtMonthLong(ym.months[0]) + ' – ' + U.fmtMonthLong(ym.months[ym.months.length - 1]), I.bars);
+    var c2 = chartCard('TSA Passenger Throughput, YoY % — 7DMA Basis',
+      '7DMA basis · ' + rangeDaily(dmaYoY, function (d) { return d.date; }), I.trend);
     var c3 = chartCard('Daily TSA Passenger Count',
       '7-day moving average · ' + rangeDaily(days, function (d) { return d.date; }), I.trend);
     var c4 = chartCard('Monthly Average TSA Passenger Count',
       U.fmtMonthLong(monthly[0].key) + ' – ' + U.fmtMonthLong(monthly[monthly.length - 1].key), I.bars);
 
-    var charts = el('div', { class: 'grid charts-4' }, [c1.card, c2.card, c3.card, c4.card]);
+    var charts = el('div', { class: 'grid charts-2x2' }, [c1.card, c2.card, c3.card, c4.card]);
 
     /* ---- C. Daily table ---- */
     var head = el('tr', {}, ['Date','Passenger Numbers','DoD %','WoW %','YoY %','7DMA','Month','Week']
@@ -168,25 +168,33 @@
       var pctY = function (v) { return v + '%'; };
       var milY = function (v) { return (v / 1e6).toFixed(1); };
       var monthX = function (v) { return U.fmtMonthShort(this.getLabelForValue(v).slice(0, 7)); };
+      var dayTitle = function (c) { return U.fmtDateLong(c[0].label); };
 
-      CH.barChart(c1.canvas, myoy.map(function (m) { return U.fmtMonthShort(m.key); }),
-        myoy.map(function (m) { return Number(m.yoy.toFixed(1)); }),
-        { color: CH.INK.navy, yCallback: pctY, yTitle: 'YoY %', maxBar: 16 });
+      // Exhibit: TSA Passenger Throughput, YoY % (monthly bars + value labels)
+      CH.barChart(c1.canvas, ym.months.map(U.fmtMonthShort), ym.values, {
+        color: CH.INK.navy, yMin: -3, yMax: 10, yCallback: pctY, yTitle: 'YoY %', maxBar: 16,
+        barLabels: { display: true, size: 8.5, color: CH.INK.navy, formatter: function (v) { return v.toFixed(1); } },
+        tooltip: { label: function (c) { return c.raw.toFixed(1) + '%'; } }
+      });
 
+      // Exhibit: same, 7DMA basis (daily line)
       CH.lineChart(c2.canvas, dmaYoY.map(function (d) { return d.date; }),
-        dmaYoY.map(function (d) { return Number(d.yoy.toFixed(2)); }),
-        { color: CH.INK.navy, width: 1.3, yCallback: pctY, xCallback: monthX });
+        dmaYoY.map(function (d) { return d.value; }), {
+        color: CH.INK.navy, width: 1.3, yCallback: pctY, yTitle: 'YoY %', xCallback: monthX,
+        tooltip: { title: dayTitle, label: function (c) { return c.raw == null ? '—' : c.raw.toFixed(1) + '%'; } }
+      });
 
       CH.lineChart(c3.canvas, days.map(function (d) { return d.date; }),
-        days.map(function (d) { return d.sevenDMA; }),
-        { color: CH.INK.navy, fill: true, width: 1.6, yMin: 0,
-          yCallback: milY, yTitle: 'Millions', xCallback: monthX,
-          tooltip: { label: function (c) { return U.fmtInt(c.raw); } } });
+        days.map(function (d) { return d.sevenDMA; }), {
+        color: CH.INK.navy, fill: true, width: 1.6, yMin: 0,
+        yCallback: milY, yTitle: 'Millions', xCallback: monthX,
+        tooltip: { title: dayTitle, label: function (c) { return U.fmtInt(c.raw); } } });
 
       CH.barChart(c4.canvas, monthly.map(function (m) { return U.fmtMonthShort(m.key); }),
-        monthly.map(function (m) { return m.avg; }),
-        { color: CH.INK.navy, yMin: 0, yCallback: milY, yTitle: 'Millions', maxBar: 14,
-          tooltip: { label: function (c) { return U.fmtInt(c.raw); } } });
+        monthly.map(function (m) { return m.avg; }), {
+        color: CH.INK.navy, yMin: 0, yCallback: milY, yTitle: 'Millions', maxBar: 16,
+        barLabels: { display: true, size: 8.5, color: CH.INK.navy, formatter: function (v) { return (v / 1e6).toFixed(1); } },
+        tooltip: { label: function (c) { return U.fmtInt(c.raw); } } });
     }
 
     return { initCharts: initCharts };

@@ -59,7 +59,12 @@
 }
 .chart-card__canvas.tall { height: 230px; }
 
-/* TSA: four charts in a row on wide screens */
+/* TSA: 2x2 chart grid (wide charts, like the research exhibits) */
+.charts-2x2 { grid-template-columns: 1fr 1fr; }
+@media (max-width: 980px) { .charts-2x2 { grid-template-columns: 1fr; } }
+.charts-2x2 .chart-card__canvas { height: 226px; }
+
+/* TSA: four charts in a row (kept for narrow alt layouts) */
 .charts-4 { grid-template-columns: repeat(4, 1fr); }
 @media (max-width: 1240px) { .charts-4 { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 620px)  { .charts-4 { grid-template-columns: 1fr; } }

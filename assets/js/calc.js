@@ -34,11 +34,12 @@
 
     days.forEach(function (d, i) {
       var prev = days[i - 1];
-      d.dod = prev ? pctChange(d.throughput, prev.throughput) : null;
+      if (d.dod == null) d.dod = prev ? pctChange(d.throughput, prev.throughput) : null;
 
-      var wowRef = byDate[shift(d.date, -7)];
-      d.wow = wowRef ? pctChange(d.throughput, wowRef.throughput) : null;
-
+      if (d.wow == null) {
+        var wowRef = byDate[shift(d.date, -7)];
+        d.wow = wowRef ? pctChange(d.throughput, wowRef.throughput) : null;
+      }
       if (d.yoy == null) {
         var yref = nearest(shift(d.date, -364), 4);
         d.yoy = yref ? pctChange(d.throughput, yref.throughput) : null;

@@ -33,7 +33,7 @@
           var meta = chart.getDatasetMeta(di);
           if (meta.type !== 'bar' || meta.hidden) return;
           ctx.save();
-          ctx.font = '700 9.5px ' + FONT;
+          ctx.font = '700 ' + (opt.size || 9.5) + 'px ' + FONT;
           ctx.fillStyle = opt.color || INK.navy;
           ctx.textAlign = 'center';
           meta.data.forEach(function (bar, i) {

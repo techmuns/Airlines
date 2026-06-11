@@ -184,8 +184,8 @@
       var pctY = function (v) { return v + '%'; };
 
       CH.barChart(h1.canvas, monthLabels, indRpk.map(function (v) { return v; }), {
-        color: CH.INK.navy, yMin: 0, yCallback: pctY, yTitle: 'YoY, %', maxBar: 22,
-        barLabels: { display: true, color: CH.INK.navy, formatter: function (v) { return v.toFixed(1); } },
+        color: CH.INK.navy, yMin: 0, yMax: 25, yCallback: pctY, yTitle: 'YoY, %', maxBar: 22,
+        barLabels: { display: true, size: 8.5, color: CH.INK.navy, formatter: function (v) { return v.toFixed(1); } },
         tooltip: { label: function (c) { return c.raw.toFixed(1) + '%'; } }
       });
 
@@ -193,7 +193,8 @@
         { label: 'Domestic', data: raw.global.domestic_rpk_yoy, color: CH.INK.navy },
         { label: 'International', data: raw.global.international_rpk_yoy, color: CH.INK.blue }
       ], {
-        yMin: 0, yCallback: pctY, yTitle: 'YoY, %',
+        yMin: -5, yMax: 30, yCallback: pctY, yTitle: 'YoY, %',
+        barLabels: { display: true, size: 7.5, color: CH.INK.navy, formatter: function (v) { return v; } },
         legend: { display: true, position: 'bottom',
           labels: { boxWidth: 11, boxHeight: 11, padding: 16, color: '#67718a',
                     font: { size: 11, weight: '600' }, usePointStyle: true, pointStyle: 'rectRounded' } },
