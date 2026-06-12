@@ -53,10 +53,15 @@ async function dismissBanners(page) {
     href: a.href || '',
   })));
   const re = /air[\s-]?passenger/i;
+  // The monthly report URL looks like .../air-passenger-market-analysis-<month>-<year>/
+  const monthly = /air-passenger-market-analysis-[a-z]+-\d{4}/i;
   const cands = links.filter(l => re.test(l.text) || re.test(l.href));
-  // de-dup by href
+  // de-dup by href, then rank the actual monthly report ahead of other
+  // "air passenger" articles (e.g. Chart of the Week).
   const seen = new Set();
-  const uniq = cands.filter(l => l.href && !seen.has(l.href) && seen.add(l.href));
+  const uniq = cands
+    .filter(l => l.href && !seen.has(l.href) && seen.add(l.href))
+    .sort((a, b) => (monthly.test(b.href) ? 1 : 0) - (monthly.test(a.href) ? 1 : 0));
 
   console.log(`found ${uniq.length} candidate Air Passenger link(s):`);
   uniq.slice(0, 25).forEach(l => console.log('  -', JSON.stringify(l)));
@@ -74,9 +79,15 @@ async function dismissBanners(page) {
         console.log('opening report page:', l.href);
         await page.goto(l.href, { waitUntil: 'domcontentloaded', timeout: 60000 });
         await dismissBanners(page);
+        await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
         await page.waitForTimeout(1500);
-        const pdfs = await page.$$eval('a', as => as.map(a => a.href).filter(h => /\.pdf(\?|$)/i.test(h || '')));
-        pdfUrl = pdfs.find(h => /passenger/i.test(h)) || pdfs[0] || null;
+        // IATA serves PDFs from /globalassets/... or a *.pdf link / download button
+        const hrefs = await page.$$eval('a', as => as.map(a => a.href || '').filter(Boolean));
+        const pdfs = hrefs.filter(h => /\.pdf(\?|$)/i.test(h) || /globalassets|getmedia|\/download/i.test(h));
+        console.log('  PDF-like links on page:', pdfs.slice(0, 8).join(' | ') || '(none)');
+        pdfUrl = pdfs.find(h => /passenger/i.test(h) && /\.pdf/i.test(h))
+              || pdfs.find(h => /\.pdf/i.test(h))
+              || pdfs[0] || null;
       }
       if (!pdfUrl) { console.log('  no PDF link on that page'); continue; }
 
