@@ -22,11 +22,14 @@
     Chart.defaults.maintainAspectRatio = false;
     Chart.defaults.animation = { duration: 500 };
 
-    /* draw value labels on top of bars (opt-in per chart) */
+    /* draw value labels on top of bars (opt-in per chart).
+       The config is read from chart.$admBarLabels (a plain object) rather than
+       options.plugins, so Chart.js never treats `formatter` as a scriptable
+       option and never calls it with a context object in place of the value. */
     Chart.register({
       id: 'admBarLabels',
       afterDatasetsDraw: function (chart) {
-        var opt = chart.options.plugins.admBarLabels;
+        var opt = chart.$admBarLabels;
         if (!opt || !opt.display) return;
         var ctx = chart.ctx;
         chart.data.datasets.forEach(function (ds, di) {
@@ -58,7 +61,6 @@
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: o.legend || { display: false },
-        admBarLabels: o.barLabels || { display: false },
         tooltip: {
           backgroundColor: '#0d2147',
           titleColor: '#fff',
@@ -79,7 +81,9 @@
           ticks: {
             color: INK.tick, maxRotation: 0, autoSkip: true,
             maxTicksLimit: o.xTicks || 8, font: { size: 10 },
-            callback: o.xCallback
+            // fall back to the category label (a bare `undefined` would make
+            // Chart.js print the raw tick index instead of the month label)
+            callback: o.xCallback || function (value) { return this.getLabelForValue(value); }
           }
         },
         y: {
@@ -99,7 +103,7 @@
 
   function barChart(canvas, labels, data, o) {
     o = o || {};
-    return new Chart(canvas.getContext('2d'), {
+    var chart = new Chart(canvas.getContext('2d'), {
       type: 'bar',
       data: { labels: labels, datasets: [{
         data: data,
@@ -110,6 +114,8 @@
       }]},
       options: baseOptions(o)
     });
+    chart.$admBarLabels = o.barLabels;
+    return chart;
   }
 
   function lineChart(canvas, labels, data, o) {
@@ -132,7 +138,7 @@
 
   function groupedBarChart(canvas, labels, series, o) {
     o = o || {};
-    return new Chart(canvas.getContext('2d'), {
+    var chart = new Chart(canvas.getContext('2d'), {
       type: 'bar',
       data: {
         labels: labels,
@@ -146,6 +152,8 @@
       },
       options: baseOptions(o)
     });
+    chart.$admBarLabels = o.barLabels;
+    return chart;
   }
 
   global.ADM.charts = {

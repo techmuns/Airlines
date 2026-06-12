@@ -31,9 +31,12 @@
         document.getElementById('meta-period').textContent =
           'Data Period: ' + periodLabel(tsa, iata);
 
+        var mapPanel = document.getElementById('panel-map');
         var tsaPanel = document.getElementById('panel-tsa');
         var iataPanel = document.getElementById('panel-iata');
         var tabs = {
+          map: { btn: document.getElementById('tab-map'), panel: mapPanel,
+                 ctl: global.ADM.map.build(mapPanel, iata) },
           tsa: { btn: document.getElementById('tab-tsa'), panel: tsaPanel,
                  ctl: global.ADM.tsa.build(tsaPanel, tsa) },
           iata: { btn: document.getElementById('tab-iata'), panel: iataPanel,
@@ -49,9 +52,10 @@
           requestAnimationFrame(function () { tabs[key].ctl.initCharts(); });
         }
 
+        tabs.map.btn.addEventListener('click', function () { activate('map'); });
         tabs.tsa.btn.addEventListener('click', function () { activate('tsa'); });
         tabs.iata.btn.addEventListener('click', function () { activate('iata'); });
-        activate('tsa');
+        activate('map');
       })
       .catch(function (e) {
         status.className = 'status-banner is-error';

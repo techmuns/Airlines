@@ -6,15 +6,23 @@ manual work once it is connected.
 
 ## What you see
 
-Two tabs:
+Three tabs:
 
-1. **TSA Overview** — daily U.S. airport security (TSA) checkpoint passenger
+1. **Global Demand Map** — the landing page. A premium dark-navy world map that
+   shows IATA regional demand as soft glowing gold bubbles (bubble size = RPK
+   market share, glow = traffic/momentum strength, soft red ring = negative or
+   weak). It has metric / view / period filters, a hover tooltip per region,
+   click-to-drill into a region, a regional trend chart, a snapshot heatmap,
+   and a regional comparison table. Uses IATA regional data only.
+2. **TSA Overview** — daily U.S. airport security (TSA) checkpoint passenger
    numbers: headline figures, four charts, a daily table, a calendar heatmap,
    and short takeaways.
-2. **Airline Traffic & Regional** — global airline traffic (IATA): two big
+3. **Airline Traffic & Regional** — global airline traffic (IATA): two big
    charts, a regional performance snapshot, a detailed matrix, and insights.
 
-The two sections are kept completely separate, as requested.
+The TSA and IATA sections are kept completely separate, as requested: the
+Global Demand Map and the Airline Traffic tab use IATA regional data only, and
+the TSA tab uses TSA data only.
 
 ## How it stays up to date
 
@@ -51,6 +59,11 @@ After that one connection, everything is automatic forever.
 
 - Preview locally: `python3 -m http.server` then open `http://localhost:8000`.
 - Regenerate the sample data: `python3 tools/generate_sample_data.py`.
+- Rebuild the world-map geometry: `python3 tools/build_world_map.py` — projects
+  the public-domain Natural Earth 1:110m land outline into
+  `assets/js/worldmap.js` (the dotted map). Only needed if you change the map
+  projection or dot density; the generated file is committed so the site has no
+  build step.
 
 ## Folder layout
 
