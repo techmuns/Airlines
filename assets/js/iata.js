@@ -196,7 +196,7 @@
         yMin: -5, yMax: 30, yCallback: pctY, yTitle: 'YoY, %',
         barLabels: { display: true, size: 7.5, color: CH.INK.navy, formatter: function (v) { return v; } },
         legend: { display: true, position: 'bottom',
-          labels: { boxWidth: 11, boxHeight: 11, padding: 16, color: '#67718a',
+          labels: { boxWidth: 11, boxHeight: 11, padding: 16, color: '#9fadc9',
                     font: { size: 11, weight: '600' }, usePointStyle: true, pointStyle: 'rectRounded' } },
         tooltip: { label: function (c) { return c.dataset.label + ': ' + c.raw.toFixed(1) + '%'; } }
       });

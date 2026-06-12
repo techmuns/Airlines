@@ -49,8 +49,6 @@
             tabs[k].btn.classList.toggle('is-active', on);
             tabs[k].panel.hidden = !on;
           });
-          // the Global Demand Map tab uses the premium dark page theme
-          document.body.classList.toggle('gdm-dark', key === 'map');
           requestAnimationFrame(function () { tabs[key].ctl.initCharts(); });
         }
 
@@ -58,6 +56,12 @@
         tabs.tsa.btn.addEventListener('click', function () { activate('tsa'); });
         tabs.iata.btn.addEventListener('click', function () { activate('iata'); });
         activate('map');
+
+        // header Export: download the IATA regional figures as a CSV file
+        var exportBtn = document.getElementById('header-export');
+        if (exportBtn) {
+          exportBtn.addEventListener('click', function () { global.ADM.map.exportCSV(iata); });
+        }
       })
       .catch(function (e) {
         status.className = 'status-banner is-error';

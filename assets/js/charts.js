@@ -6,13 +6,14 @@
   var Chart = global.Chart;
   var FONT = '"Inter", "Segoe UI", system-ui, sans-serif';
 
+  /* dark-theme ink: gold primary series, soft blue secondary, light axes */
   var INK = {
-    navy: '#162f5c',
-    navySoft: '#2c5391',
-    blue: '#7ba7da',
-    grid: '#e3e8f1',
-    axis: '#8b94a6',
-    tick: '#5f6a80'
+    navy: '#d9b36a',                    // primary series (muted gold)
+    navySoft: '#c9a85c',
+    blue: '#7ba7da',                    // secondary series (soft blue)
+    grid: 'rgba(141,163,205,.13)',
+    axis: '#8fa1c0',
+    tick: '#8093b4'
   };
 
   if (Chart) {
@@ -125,7 +126,7 @@
       data: { labels: labels, datasets: [{
         data: data,
         borderColor: o.color || INK.navy,
-        backgroundColor: o.fill ? 'rgba(22,47,92,.09)' : 'transparent',
+        backgroundColor: o.fill ? 'rgba(217,179,106,.10)' : 'transparent',
         fill: !!o.fill,
         borderWidth: o.width || 2.0,
         pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: o.color || INK.navy,

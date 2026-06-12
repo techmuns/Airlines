@@ -1,11 +1,13 @@
 /* Airline Demand Monitor — TAB 1 (landing): Global Demand Map.
-   A premium navy world map that shows IATA regional airline demand as glowing
-   gold bubbles. Regional IATA RPK / ASK / PLF / market share only — no TSA data. */
+   A premium dark world map that shows IATA regional airline demand as glowing
+   gold bubbles, with a controls bar, regional trend, an all-regions snapshot
+   and a comparison table. Regional IATA RPK / ASK / PLF / market share only —
+   no TSA data, no country- or airport-level data. */
 (function (global) {
   'use strict';
 
   var U = global.ADM.util, C = global.ADM.calc, HM = global.ADM.heatmap,
-      CH = global.ADM.charts, WM = global.ADM.worldMap, Chart = global.Chart,
+      WM = global.ADM.worldMap, Chart = global.Chart,
       el = U.el, I = U.ICONS;
 
   var SVGNS = 'http://www.w3.org/2000/svg';
@@ -21,26 +23,27 @@
      (longitude / latitude) for each. These are regional placements only — the
      data is regional, never country- or airport-level. */
   var REGIONS = ['North America', 'Europe', 'Asia/Pacific', 'Middle East', 'Latin America', 'Africa'];
+  var REGIONS_A = REGIONS.slice().sort();          // alphabetical, for tables
   var ANCHORS = {
-    'North America': { lon: -98, lat: 46 },
+    'North America': { lon: -98, lat: 44 },
     'Europe':        { lon: 10,  lat: 49 },
-    'Asia/Pacific':  { lon: 114, lat: 19 },
-    'Middle East':   { lon: 51,  lat: 26 },
-    'Latin America': { lon: -61, lat: -13 },
-    'Africa':        { lon: 21,  lat: 4 }
+    'Asia/Pacific':  { lon: 112, lat: 16 },
+    'Middle East':   { lon: 49,  lat: 26 },
+    'Latin America': { lon: -61, lat: -14 },
+    'Africa':        { lon: 19,  lat: 3 }
   };
   var SHORT = {
-    'North America': 'N. America', 'Europe': 'Europe', 'Asia/Pacific': 'Asia / Pacific',
+    'North America': 'North America', 'Europe': 'Europe', 'Asia/Pacific': 'Asia/Pacific',
     'Middle East': 'Middle East', 'Latin America': 'Latin America', 'Africa': 'Africa'
   };
 
-  var METRIC_LABEL = { rpk: 'RPK YoY', ask: 'ASK YoY', plf: 'PLF', share: 'RPK market share' };
-  var VIEW_LABEL = { latest: 'Latest month', m3: '3M rolling', m12: '12-month' };
+  var METRIC_LABEL = { rpk: 'RPK YoY', ask: 'ASK YoY', plf: 'PLF', share: 'RPK Market Share' };
+  var VIEW_LABEL = { latest: 'Latest Month', m3: '3M Rolling', m12: '12-Month' };
 
-  /* gold ramp (muted -> bright) + soft red, all premium / never neon */
-  var GOLD_DIM = [150, 128, 74], GOLD_BRIGHT = [243, 209, 134], GOLD_HALO = [236, 196, 110];
+  /* gold ramp (muted -> bright halo), premium / never neon */
+  var GOLD_DIM = [150, 128, 74], GOLD_HALO = [236, 196, 110];
 
-  function project(lon, lat) { return { x: (lon + 180) * WM.k, y: (WM.latTop - lat) * WM.k }; }
+  function project(lon, lat) { return { x: (lon + 180) * WM.k, y: (WM.latTop - lat) * WM.ky }; }
   function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
   function lerp(a, b, t) { return a + (b - a) * t; }
   function mix(c1, c2, t) {
@@ -65,6 +68,30 @@
     return S;
   }
 
+  /* ---- Export: download the regional metrics as a CSV file ---- */
+  function exportCSV(raw) {
+    var S = summarise(raw);
+    function f(v) { return v == null ? '' : v.toFixed(1); }
+    var lines = [
+      'IATA regional airline traffic - latest month ' + raw.months[raw.months.length - 1],
+      'Region,RPK YoY % (latest),RPK YoY % (3M),ASK YoY % (latest),ASK YoY % (3M),' +
+      'PLF % (latest),PLF % (3M),PLF % (12M),RPK Market Share %'
+    ];
+    REGIONS_A.forEach(function (r) {
+      var d = S[r];
+      lines.push([r, f(d.rpk.latest), f(d.rpk.m3), f(d.ask.latest), f(d.ask.m3),
+                  f(d.plf.latest), f(d.plf.m3), f(d.plf.m12), f(d.share)].join(','));
+    });
+    var blob = new Blob([lines.join('\n') + '\n'], { type: 'text/csv' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'iata-regional-traffic.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }
+
   function build(root, raw) {
     var months = raw.months;
     var monthLabels = months.map(U.fmtMonthShort);
@@ -81,7 +108,7 @@
     var yearIdx = [];
     months.forEach(function (m, i) { if (Number(m.slice(0, 4)) === fullYear) yearIdx.push(i); });
 
-    var state = { metric: 'rpk', view: 'latest', period: 'month', region: 'Asia/Pacific' };
+    var state = { metric: 'rpk', view: 'latest', period: 'month', region: 'Asia/Pacific', range: 24 };
 
     /* ================= map value / encoding logic ================= */
     function seriesFor(r, metric) {
@@ -113,7 +140,7 @@
       if (state.metric === 'share') return false;
       return v < 0;
     }
-    function baseRadius(share) { return Math.max(11, 33 * Math.sqrt(share / maxShare)); }
+    function baseRadius(share) { return Math.max(9.5, 26 * Math.sqrt(share / maxShare)); }
 
     /* ================= map shell ================= */
     var svgEl = svg('svg', {
@@ -126,23 +153,6 @@
 
     var tipEl = el('div', { class: 'gdm-tooltip', hidden: 'hidden' });
     var mapWrap = el('div', { class: 'gdm-map' }, [svgEl, tipEl]);
-
-    /* controls (segmented pills sitting on the dark map bar) */
-    var caption = el('span', { class: 'gdm-mapbar__now' });
-    var metricSeg = segControl('Metric',
-      [['rpk', 'RPK'], ['ask', 'ASK'], ['plf', 'PLF'], ['share', 'Market Share']],
-      'metric');
-    var viewSeg = segControl('View',
-      [['latest', 'Latest Month'], ['m3', '3M Rolling'], ['m12', '12M']], 'view');
-    var periodSeg = segControl('Period', [['month', 'Month'], ['year', 'Year']], 'period');
-
-    var mapbar = el('div', { class: 'gdm-mapbar' }, [
-      el('div', { class: 'gdm-mapbar__lead' }, [
-        el('span', { class: 'gdm-mapbar__eyebrow', text: 'Regional demand map' }),
-        caption
-      ]),
-      el('div', { class: 'gdm-controls' }, [metricSeg.el, viewSeg.el, periodSeg.el])
-    ]);
 
     /* floating in-map legend (lower-left, like a chart key) */
     function legendDot(d, o) {
@@ -162,70 +172,76 @@
     ]);
     mapWrap.appendChild(legendBox);
 
-    var mapCard = el('div', { class: 'card gdm-map-card' }, [mapbar, mapWrap]);
+    var mapCard = el('div', { class: 'card gdm-map-card' }, [mapWrap]);
 
-    /* ================= tab header ================= */
-    var header = el('div', { class: 'gdm-head' }, [
-      el('div', {}, [
-        el('div', { class: 'gdm-head__title', text: 'Global Demand Map' }),
-        el('div', { class: 'gdm-head__sub', text: 'Regional airline traffic concentration and momentum' })
-      ]),
-      el('div', { class: 'gdm-head__meta' }, [
-        el('span', { class: 'gdm-chip' }, [el('span', { class: 'ico', html: I.calendar }),
-          'Latest month · ' + latestMonthLong]),
-        el('span', { class: 'gdm-head__src', text: 'Source: IATA regional traffic data (' + rangeSub + ')' })
+    /* ================= controls bar (above the map) ================= */
+    var metricSeg = segControl('Metric',
+      [['rpk', 'RPK'], ['ask', 'ASK'], ['plf', 'PLF'], ['share', 'Market Share']], 'metric');
+    var viewSeg = segControl('View',
+      [['latest', 'Latest Month'], ['m3', '3M Rolling'], ['m12', '12M']], 'view');
+    var periodSeg = segControl('Period', [['month', 'Month'], ['year', 'Year']], 'period');
+
+    var controlBar = el('div', { class: 'card gdm-controlbar' }, [
+      el('div', { class: 'gdm-controls' }, [metricSeg.el, viewSeg.el, periodSeg.el]),
+      el('div', { class: 'gdm-controlbar__meta' }, [
+        el('span', { class: 'ico', html: I.calendar }),
+        'Latest month · ' + latestMonthLong
       ])
     ]);
 
-    /* ================= selected-region panel ================= */
-    var panel = el('div', { class: 'card gdm-region-card' });
-
-    /* ================= lower split: trend + snapshot heatmap ================= */
+    /* ================= lower split: trend + all-regions snapshot ================= */
     var trendCanvas = el('canvas');
     var trendTitle = el('span', { text: 'Regional Trend' });
+    var rangeSel = el('select', { class: 'gdm-rangesel', 'aria-label': 'Trend range' }, [
+      el('option', { value: '12', text: 'Last 12 Months' }),
+      el('option', { value: '24', text: 'Last 24 Months' }),
+      el('option', { value: '0', text: 'All Months' })
+    ]);
+    rangeSel.value = String(state.range);
+    rangeSel.addEventListener('change', function () {
+      state.range = Number(rangeSel.value);
+      updateTrend();
+    });
     var trendCard = el('div', { class: 'card chart-card gdm-trend' }, [
-      el('div', {}, [
+      el('div', { class: 'gdm-trend__head' }, [
         el('div', { class: 'card-title' }, [el('span', { class: 'ico', html: I.trend }), trendTitle]),
-        el('div', { class: 'card-sub', text: 'RPK & ASK year-over-year (left) · PLF load factor (right) · ' + rangeSub })
+        rangeSel
       ]),
       el('div', { class: 'chart-card__canvas gdm-trend__canvas' }, [trendCanvas])
     ]);
 
-    var snapTable = el('table', { class: 'hm' });
-    var snapTitle = el('span', { text: 'Regional Snapshot' });
-    var snapCard = el('div', { class: 'card' }, [
-      el('div', { class: 'section-head' }, [
-        el('div', { class: 'section-head__title' }, [el('span', { class: 'ico', html: I.grid }), snapTitle])
-      ]),
-      el('div', { class: 'hm-wrap' }, [snapTable])
-    ]);
-
-    var split = el('div', { class: 'grid gdm-split' }, [trendCard, snapCard]);
+    var snap = buildSnapshot();
+    var split = el('div', { class: 'grid gdm-split' }, [trendCard, snap.card]);
 
     /* ================= regional comparison table ================= */
     var cmp = buildComparison();
 
     var footer = el('div', { class: 'source-note' }, [
-      el('span', {}, [el('b', { text: 'Source: ' }), 'IATA Economics — Air Passenger Market Analysis (regional).']),
-      el('span', { text: 'Bubbles show regional demand only — no country- or airport-level data.' }),
-      el('span', { text: 'RPK = Revenue Passenger Kilometres · ASK = Available Seat Kilometres · PLF = Passenger Load Factor' })
+      el('span', {}, [el('b', { text: 'Source: ' }), 'IATA Economics — Air Passenger Market Analysis (regional), ' + rangeSub + '.']),
+      el('span', { text: 'Regional data only — no country- or airport-level detail.' }),
+      el('span', { text: 'YoY = year over year · 3M = trailing 3-month average · RPK = Revenue Passenger Kilometres · ASK = Available Seat Kilometres · PLF = Passenger Load Factor (level %)' })
     ]);
 
-    root.appendChild(el('div', { class: 'gdm-stack' }, [header, mapCard, panel, split, cmp.card, footer]));
+    root.appendChild(el('div', { class: 'gdm-stack' }, [controlBar, mapCard, split, cmp.card, footer]));
 
-    /* ================= static SVG (bg, graticule, land, dots) ================= */
+    /* ================= static SVG (bg, graticule, land, dots, vignette) ================= */
     function staticMarkup() {
       var defs = '<defs>' +
-        '<radialGradient id="gdmBg" cx="50%" cy="4%" r="118%">' +
-          '<stop offset="0%" stop-color="#0f1f3c"/>' +
-          '<stop offset="52%" stop-color="#0a1529"/>' +
-          '<stop offset="100%" stop-color="#04080f"/>' +
+        '<radialGradient id="gdmBg" cx="50%" cy="0%" r="130%">' +
+          '<stop offset="0%" stop-color="#0e1e3a"/>' +
+          '<stop offset="50%" stop-color="#091427"/>' +
+          '<stop offset="100%" stop-color="#03060d"/>' +
         '</radialGradient>' +
         '<radialGradient id="gdmCore">' +
           '<stop offset="0%" stop-color="#fff8e7"/>' +
           '<stop offset="34%" stop-color="#f6d993"/>' +
           '<stop offset="72%" stop-color="#cfa75e"/>' +
           '<stop offset="100%" stop-color="#7e6532"/>' +
+        '</radialGradient>' +
+        '<radialGradient id="gdmVin" cx="50%" cy="50%" r="72%">' +
+          '<stop offset="0%" stop-color="#03060d" stop-opacity="0"/>' +
+          '<stop offset="68%" stop-color="#03060d" stop-opacity="0"/>' +
+          '<stop offset="100%" stop-color="#03060d" stop-opacity="0.55"/>' +
         '</radialGradient>' +
         '<filter id="gdmGlow" x="-90%" y="-90%" width="280%" height="280%">' +
           '<feGaussianBlur stdDeviation="6"/>' +
@@ -237,17 +253,22 @@
         a = project(lon, WM.latTop); b = project(lon, WM.latBot);
         grat += '<line x1="' + r1(a.x) + '" y1="' + r1(a.y) + '" x2="' + r1(b.x) + '" y2="' + r1(b.y) + '"/>';
       }
-      for (lat = -30; lat <= WM.latTop; lat += 30) {
+      for (lat = -30; lat <= 60; lat += 30) {
         a = project(-180, lat); b = project(180, lat);
         grat += '<line class="' + (lat === 0 ? 'is-eq' : '') + '" x1="' + r1(a.x) + '" y1="' + r1(a.y) +
                 '" x2="' + r1(b.x) + '" y2="' + r1(b.y) + '"/>';
       }
       grat += '</g>';
       var land = '<path class="gdm-land" fill-rule="evenodd" d="' + WM.landPath + '"/>';
-      var dots = '<g class="gdm-dots">' + WM.dots.map(function (p) {
-        return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="1.5"/>';
+      // halftone land dots; a deterministic ~9% are warm "city light" sparks
+      var dots = '<g class="gdm-dots">' + WM.dots.map(function (p, i) {
+        var warm = (i * 7) % 11 === 0;
+        return '<circle' + (warm ? ' class="is-warm"' : '') +
+               ' cx="' + p[0] + '" cy="' + p[1] + '" r="' + (warm ? 1.5 : 1.3) + '"/>';
       }).join('') + '</g>';
-      return defs + bg + grat + land + dots + '<g class="gdm-bubbles"></g>';
+      var vin = '<rect x="0" y="0" width="' + WM.width + '" height="' + WM.height +
+                '" fill="url(#gdmVin)" pointer-events="none"/>';
+      return defs + bg + grat + land + dots + vin + '<g class="gdm-bubbles"></g>';
     }
 
     /* ================= bubbles ================= */
@@ -261,7 +282,7 @@
       REGIONS.slice().sort(function (a, b) { return S[b].share - S[a].share; }).forEach(function (r) {
         var p = project(ANCHORS[r].lon, ANCHORS[r].lat);
         var v = windowValue(r), st = strengthOf(v), weak = isWeak(v);
-        var R = baseRadius(S[r].share) * (0.78 + 0.3 * st);   // outer-ring radius
+        var R = baseRadius(S[r].share) * (0.8 + 0.28 * st);   // outer-ring radius
         var glowR = R * 1.95, coreR = R * 0.46;
         var haloCol = mix(GOLD_DIM, GOLD_HALO, st);
 
@@ -273,26 +294,26 @@
         g.appendChild(svg('circle', { r: r1(glowR), fill: haloCol,
           opacity: r1(0.13 + 0.4 * st), filter: 'url(#gdmGlow)' }));
         if (state.region === r) {
-          g.appendChild(svg('circle', { class: 'gdm-bubble__sel', r: r1(R + 6),
-            fill: 'none', stroke: 'rgba(247,229,172,.9)', 'stroke-width': '1.3' }));
+          g.appendChild(svg('circle', { class: 'gdm-bubble__sel', r: r1(R + 5),
+            fill: 'none', stroke: 'rgba(247,229,172,.9)', 'stroke-width': '1.2' }));
         }
         g.appendChild(svg('circle', { r: r1(R), fill: 'none',
           stroke: weak ? 'rgba(196,88,79,.75)' : 'rgba(232,200,126,' + r1(0.22 + 0.3 * st) + ')',
-          'stroke-width': weak ? '1.6' : '1' }));
+          'stroke-width': weak ? '1.5' : '1' }));
         g.appendChild(svg('circle', { r: r1(R * 0.68), fill: 'none',
           stroke: 'rgba(238,210,142,' + r1(0.3 + 0.4 * st) + ')', 'stroke-width': '1' }));
         g.appendChild(svg('circle', { class: 'gdm-bubble__core', r: r1(coreR),
           fill: 'url(#gdmCore)', opacity: r1(0.72 + 0.28 * st) }));
 
         // side label: region name (gold caps) + the selected value beneath
-        var lx = r1(R + 14);
+        var lx = r1(R + 12);
         var name = svg('text', { class: 'gdm-bubble__name', x: lx, y: '-3', 'text-anchor': 'start' });
         name.textContent = SHORT[r].toUpperCase();
         g.appendChild(name);
-        var val = svg('text', { class: 'gdm-bubble__val', x: lx, y: '12', 'text-anchor': 'start' });
+        var val = svg('text', { class: 'gdm-bubble__val', x: lx, y: '11', 'text-anchor': 'start' });
         val.textContent = bubbleVal(v);
         g.appendChild(val);
-        g.appendChild(svg('circle', { class: 'gdm-hit', r: r1(Math.max(R + 10, 20)), fill: 'transparent' }));
+        g.appendChild(svg('circle', { class: 'gdm-hit', r: r1(Math.max(R + 9, 17)), fill: 'transparent' }));
 
         g.addEventListener('mouseenter', function (e) { showTip(r); onMove(e); });
         g.addEventListener('mousemove', onMove);
@@ -337,9 +358,9 @@
     function hideTip() { tipEl.hidden = true; }
     function placeTipRel(x, y, rect) {
       var tw = tipEl.offsetWidth || 180, th = tipEl.offsetHeight || 130;
-      var left = x + 18, top = y + 18;
+      var left = x + 18, top = y + 14;
       if (left + tw > rect.width - 8) left = x - tw - 18;
-      if (top + th > rect.height - 8) top = y - th - 18;
+      if (top + th > rect.height - 8) top = y - th - 14;
       tipEl.style.left = Math.max(8, left) + 'px';
       tipEl.style.top = Math.max(8, top) + 'px';
     }
@@ -353,94 +374,67 @@
       placeTipRel(p.x * scale, p.y * scale, rect);
     }
 
-    /* ================= selected-region panel ================= */
-    function perfLabel(d) {
-      var score = (d.rpk.latest || 0) * 0.6 + (d.rpk.m3 || 0) * 0.4;
-      if (score >= 2.5) return { txt: 'Strong', cls: 'is-strong' };
-      if (score <= -2) return { txt: 'Weak', cls: 'is-weak' };
-      return { txt: 'Stable', cls: 'is-stable' };
-    }
-    function statTile(lab, txt, cls) {
-      return el('div', { class: 'gdm-stat' }, [
-        el('div', { class: 'gdm-stat__lab', text: lab }),
-        el('div', { class: 'gdm-stat__val num ' + (cls || ''), text: txt })
-      ]);
-    }
-    function updatePanel() {
-      var r = state.region, d = S[r], perf = perfLabel(d);
-      panel.innerHTML = '';
-      panel.appendChild(el('div', { class: 'gdm-region' }, [
-        el('div', { class: 'gdm-region__id' }, [
-          el('span', { class: 'gdm-region__icon', html: I.pin }),
-          el('div', {}, [
-            el('div', { class: 'gdm-region__eyebrow', text: 'Selected region' }),
-            el('div', { class: 'gdm-region__name', text: r })
-          ]),
-          el('span', { class: 'gdm-badge ' + perf.cls, text: perf.txt })
+    /* ================= all-regions snapshot (latest month) ================= */
+    function buildSnapshot() {
+      var head = el('tr', { class: 'sub' },
+        ['Region', 'RPK YoY', 'ASK YoY', 'PLF', 'PLF 3M', 'PLF 12M', 'Mkt Share']
+          .map(function (t, i) { return el('th', { class: i === 0 ? 'rowlab' : '', text: t }); }));
+      var tbody = el('tbody');
+      var rows = {};
+      REGIONS_A.forEach(function (r) {
+        var d = S[r];
+        function c(v, cls) { return el('td', { class: 'val ' + cls, text: v == null ? '—' : U.fmtPctPlain(v) }); }
+        var tr = el('tr', { class: 'gdm-snap-row' }, [
+          el('td', { class: 'rowlab', text: r }),
+          c(d.rpk.latest, HM.yoyClass(d.rpk.latest)),
+          c(d.ask.latest, HM.yoyClass(d.ask.latest)),
+          c(d.plf.latest, HM.plfClass(d.plf.latest)),
+          c(d.plf.m3, HM.plfClass(d.plf.m3)),
+          c(d.plf.m12, HM.plfClass(d.plf.m12)),
+          c(d.share, 'fill-none')
+        ]);
+        tr.addEventListener('click', function () { selectRegion(r); });
+        rows[r] = tr;
+        tbody.appendChild(tr);
+      });
+      var card = el('div', { class: 'card' }, [
+        el('div', { class: 'section-head' }, [
+          el('div', { class: 'section-head__title' }, [el('span', { class: 'ico', html: I.grid }),
+            'Regional Snapshot — Latest Month']),
+          el('span', { class: 'gdm-sechead-note', text: latestMonthLong })
         ]),
-        el('div', { class: 'gdm-stats' }, [
-          statTile('RPK YoY', U.fmtPct(d.rpk.latest), U.signClass(d.rpk.latest)),
-          statTile('ASK YoY', U.fmtPct(d.ask.latest), U.signClass(d.ask.latest)),
-          statTile('PLF', U.fmtPctPlain(d.plf.latest)),
-          statTile('RPK 3M', U.fmtPct(d.rpk.m3), U.signClass(d.rpk.m3)),
-          statTile('ASK 3M', U.fmtPct(d.ask.m3), U.signClass(d.ask.m3)),
-          statTile('PLF 3M', U.fmtPctPlain(d.plf.m3)),
-          statTile('Mkt Share', U.fmtPctPlain(d.share))
+        el('div', { class: 'hm-wrap' }, [
+          el('table', { class: 'hm gdm-snaptbl' }, [el('thead', {}, [head]), tbody])
         ])
-      ]));
-    }
-
-    /* ================= snapshot heatmap (selected region) ================= */
-    function hmCell(v, cls, span) {
-      var td = el('td', { class: 'val ' + cls, text: v == null ? '—' : U.fmtPctPlain(v) });
-      if (span) td.setAttribute('colspan', span);
-      return td;
-    }
-    function updateSnap() {
-      var d = S[state.region];
-      snapTitle.textContent = 'Regional Snapshot — ' + state.region;
-      snapTable.innerHTML = '';
-      snapTable.appendChild(el('thead', {}, [el('tr', { class: 'grp' }, [
-        el('th', { class: 'spacer rowlab', text: 'Metric' }),
-        el('th', { text: 'Latest' }), el('th', { text: '3M Rolling' }), el('th', { text: '12-Month' })
-      ])]));
-      var tb = el('tbody');
-      tb.appendChild(el('tr', {}, [el('td', { class: 'rowlab', text: 'RPK YoY %' }),
-        hmCell(d.rpk.latest, HM.yoyClass(d.rpk.latest)), hmCell(d.rpk.m3, HM.yoyClass(d.rpk.m3)),
-        hmCell(d.rpk.m12, HM.yoyClass(d.rpk.m12))]));
-      tb.appendChild(el('tr', {}, [el('td', { class: 'rowlab', text: 'ASK YoY %' }),
-        hmCell(d.ask.latest, HM.yoyClass(d.ask.latest)), hmCell(d.ask.m3, HM.yoyClass(d.ask.m3)),
-        hmCell(d.ask.m12, HM.yoyClass(d.ask.m12))]));
-      tb.appendChild(el('tr', {}, [el('td', { class: 'rowlab', text: 'PLF %' }),
-        hmCell(d.plf.latest, HM.plfClass(d.plf.latest)), hmCell(d.plf.m3, HM.plfClass(d.plf.m3)),
-        hmCell(null, 'fill-none')]));
-      tb.appendChild(el('tr', { class: 'gdm-snap-hl' }, [el('td', { class: 'rowlab', text: 'PLF 12M' }),
-        hmCell(d.plf.m12, HM.plfClass(d.plf.m12), 3)]));
-      tb.appendChild(el('tr', { class: 'gdm-snap-hl' }, [el('td', { class: 'rowlab', text: 'Market Share %' }),
-        hmCell(d.share, 'fill-none', 3)]));
-      snapTable.appendChild(tb);
+      ]);
+      return { card: card, rows: rows };
     }
 
     /* ================= regional comparison table ================= */
-    function buildComparison() {
-      var grp = el('tr', { class: 'grp' }, [
-        el('th', { class: 'spacer rowlab', text: 'Region' }),
-        el('th', { colspan: 2, text: 'RPK (YoY %)' }),
-        el('th', { colspan: 2, text: 'ASK (YoY %)' }),
-        el('th', { colspan: 3, text: 'PLF (%)' }),
-        el('th', { text: 'RPK Share' })
+    function th2(lab, unit, cls) {
+      return el('th', { class: cls || '' }, [
+        el('div', { class: 'gdm-th__lab', text: lab }),
+        unit ? el('div', { class: 'gdm-th__unit', text: unit }) : null
       ]);
-      var sub = el('tr', { class: 'sub' }, ['', 'Latest', '3M', 'Latest', '3M', 'Latest', '3M', '12M', '%']
-        .map(function (t, i) { return el('th', { class: i === 0 ? 'rowlab' : '', text: t }); }));
+    }
+    function buildComparison() {
+      var head = el('tr', { class: 'sub gdm-cmp-head' }, [
+        th2('Region', null, 'rowlab'),
+        th2('RPK Latest', '(YoY %)'), th2('RPK 3M', '(YoY %)'),
+        th2('ASK Latest', '(YoY %)'), th2('ASK 3M', '(YoY %)'),
+        th2('PLF Latest', '(%)'), th2('PLF 3M', '(%)'), th2('PLF 12M', '(%)'),
+        th2('Market Share', '(%)')
+      ]);
       var tbody = el('tbody');
       var rows = {};
-      REGIONS.forEach(function (r) {
+      REGIONS_A.forEach(function (r) {
         var d = S[r];
         function c(v, cls) { return el('td', { class: 'val ' + cls, text: v == null ? '—' : U.fmtPctPlain(v) }); }
+        function cy(v, cls) { return el('td', { class: 'val ' + cls, text: v == null ? '—' : U.fmtPct(v) }); }
         var tr = el('tr', { class: 'gdm-cmp-row' }, [
-          el('td', { class: 'rowlab' }, [el('span', { class: 'ico', html: I.pin }), r]),
-          c(d.rpk.latest, HM.yoyClass(d.rpk.latest)), c(d.rpk.m3, HM.yoyClass(d.rpk.m3)),
-          c(d.ask.latest, HM.yoyClass(d.ask.latest)), c(d.ask.m3, HM.yoyClass(d.ask.m3)),
+          el('td', { class: 'rowlab', text: r }),
+          cy(d.rpk.latest, HM.yoyClass(d.rpk.latest)), cy(d.rpk.m3, HM.yoyClass(d.rpk.m3)),
+          cy(d.ask.latest, HM.yoyClass(d.ask.latest)), cy(d.ask.m3, HM.yoyClass(d.ask.m3)),
           c(d.plf.latest, HM.plfClass(d.plf.latest)), c(d.plf.m3, HM.plfClass(d.plf.m3)),
           c(d.plf.m12, HM.plfClass(d.plf.m12)), c(d.share, 'fill-none')
         ]);
@@ -450,17 +444,21 @@
       });
       var card = el('div', { class: 'card' }, [
         el('div', { class: 'section-head' }, [
-          el('div', { class: 'section-head__title' }, [el('span', { class: 'ico', html: I.bars }), 'Regional Comparison — Latest Metrics'])
+          el('div', { class: 'section-head__title' }, [el('span', { class: 'ico', html: I.bars }),
+            'Regional Comparison — Latest Metrics'])
         ]),
         el('div', { class: 'hm-scroll' }, [
-          el('table', { class: 'hm' }, [el('thead', {}, [grp, sub]), tbody])
+          el('table', { class: 'hm gdm-cmptbl' }, [el('thead', {}, [head]), tbody])
         ]),
-        el('div', { class: 'matrix-note', text: 'RPK / ASK shown year-over-year %. PLF shown as load-factor level %. Click any region to drill down. Green = stronger · gold = neutral · red = weaker.' })
+        el('div', { class: 'matrix-note', text: 'YoY = year over year · 3M = trailing 3-month average · PLF shown as load-factor level % · Click a region row (or a map bubble) to update the trend chart.' })
       ]);
       return { card: card, rows: rows };
     }
-    function updateCmpHighlight() {
-      REGIONS.forEach(function (r) { cmp.rows[r].classList.toggle('is-selected', r === state.region); });
+    function updateRowHighlights() {
+      REGIONS_A.forEach(function (r) {
+        cmp.rows[r].classList.toggle('is-selected', r === state.region);
+        snap.rows[r].classList.toggle('is-selected', r === state.region);
+      });
     }
 
     /* ================= segmented controls ================= */
@@ -481,12 +479,6 @@
     }
     function setState(key, val) {
       state[key] = val;
-      // View only applies to time-series metrics on a monthly basis
-      if (key === 'metric' || key === 'period') {
-        if (state.metric === 'share' || state.period === 'year') {
-          // keep view value but it is inactive
-        }
-      }
       metricSeg.sync(); viewSeg.sync(); periodSeg.sync();
       refreshControlsState();
       renderBubbles();
@@ -497,26 +489,28 @@
       viewSeg.el.classList.toggle('is-disabled', !viewActive);
     }
     function updateCaption() {
-      var viewTxt = state.metric === 'share' ? 'Static share'
-        : state.period === 'year' ? ('Full year ' + fullYear)
+      var viewTxt = state.metric === 'share' ? 'Share of Global'
+        : state.period === 'year' ? ('Full Year ' + fullYear)
         : VIEW_LABEL[state.view];
-      caption.textContent = METRIC_LABEL[state.metric] + ' · ' + viewTxt;
-      legendTitle.textContent = METRIC_LABEL[state.metric] + ' · ' + viewTxt + ' (share of global)';
+      legendTitle.textContent = METRIC_LABEL[state.metric] + ' · ' + viewTxt;
     }
 
     /* ================= trend chart ================= */
     var trendChart = null;
+    function rangeSlice(arr) {
+      return state.range > 0 ? arr.slice(-state.range) : arr.slice();
+    }
     function buildTrend() {
       var d = S[state.region];
       var pctY = function (v) { return v + '%'; };
       trendChart = new Chart(trendCanvas.getContext('2d'), {
         type: 'line',
         data: {
-          labels: monthLabels,
+          labels: rangeSlice(monthLabels),
           datasets: [
-            line('RPK YoY %', d.rpk.series, '#d9b36a', 'y'),            // gold
-            line('ASK YoY %', d.ask.series, '#7ba7da', 'y'),            // soft blue
-            line('PLF %', d.plf.series, 'rgba(234,240,250,.85)', 'y1')  // muted light
+            line('RPK YoY %', rangeSlice(d.rpk.series), '#d9b36a', 'y'),            // gold
+            line('ASK YoY %', rangeSlice(d.ask.series), '#7ba7da', 'y'),            // soft blue
+            line('PLF %', rangeSlice(d.plf.series), 'rgba(234,240,250,.85)', 'y1')  // muted light
           ]
         },
         options: {
@@ -529,7 +523,7 @@
                 font: { size: 11, weight: '600' }, usePointStyle: true, pointStyle: 'line' } },
             tooltip: {
               backgroundColor: '#0d2147', titleColor: '#fff', bodyColor: '#dbe4f3',
-              borderColor: 'rgba(255,255,255,.12)', borderWidth: 1, padding: 10, cornerRadius: 8,
+              borderColor: 'rgba(217,179,106,.4)', borderWidth: 1, padding: 10, cornerRadius: 8,
               titleFont: { weight: '700', size: 12 }, bodyFont: { size: 12 },
               callbacks: { label: function (c) {
                 if (c.raw == null) return c.dataset.label + ': —';
@@ -541,7 +535,7 @@
           },
           scales: {
             x: { grid: { display: false, drawTicks: false }, border: { color: 'rgba(141,163,205,.25)' },
-                 ticks: { color: '#8093b4', maxRotation: 0, autoSkip: true, maxTicksLimit: 8, font: { size: 10 } } },
+                 ticks: { color: '#8093b4', maxRotation: 0, autoSkip: true, maxTicksLimit: 9, font: { size: 10 } } },
             y: { position: 'left', grid: { color: 'rgba(141,163,205,.13)', drawTicks: false }, border: { display: false },
                  ticks: { color: '#8093b4', font: { size: 10 }, padding: 6, maxTicksLimit: 6, callback: pctY },
                  title: { display: true, text: 'YoY %', color: '#8fa1c0', font: { size: 10, weight: '600' } },
@@ -563,9 +557,10 @@
       trendTitle.textContent = 'Regional Trend — ' + state.region;
       if (!trendChart) return;
       var d = S[state.region];
-      trendChart.data.datasets[0].data = d.rpk.series;
-      trendChart.data.datasets[1].data = d.ask.series;
-      trendChart.data.datasets[2].data = d.plf.series;
+      trendChart.data.labels = rangeSlice(monthLabels);
+      trendChart.data.datasets[0].data = rangeSlice(d.rpk.series);
+      trendChart.data.datasets[1].data = rangeSlice(d.ask.series);
+      trendChart.data.datasets[2].data = rangeSlice(d.plf.series);
       trendChart.update();
     }
 
@@ -573,19 +568,15 @@
     function selectRegion(r) {
       state.region = r;
       renderBubbles();
-      updatePanel();
-      updateSnap();
-      updateCmpHighlight();
+      updateRowHighlights();
       updateTrend();
     }
 
-    /* ---- initial paint (no canvas sizing needed for SVG/tables) ---- */
+    /* ---- initial paint ---- */
     refreshControlsState();
     updateCaption();
     renderBubbles();
-    updatePanel();
-    updateSnap();
-    updateCmpHighlight();
+    updateRowHighlights();
     updateTrend();   // sets the title; chart itself builds lazily
 
     /* ---- lazy chart init (Chart.js canvas must be visible to size) ---- */
@@ -599,5 +590,5 @@
     return { initCharts: initCharts };
   }
 
-  global.ADM.map = { build: build };
+  global.ADM.map = { build: build, exportCSV: exportCSV };
 })(window);

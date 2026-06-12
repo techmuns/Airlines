@@ -6,14 +6,21 @@ manual work once it is connected.
 
 ## What you see
 
+The whole dashboard uses one premium dark aviation theme (near-black navy with
+muted gold accents) inside a single gold-edged panel that fills the screen.
+There is also an **Export** button in the header that downloads the regional
+airline figures as a spreadsheet (CSV) file.
+
 Three tabs:
 
-1. **Global Demand Map** — the landing page. A premium dark-navy world map that
-   shows IATA regional demand as soft glowing gold bubbles (bubble size = RPK
+1. **Global Demand Map** — the landing page. A short, wide dark world map that
+   shows IATA regional demand as glowing gold bubbles (bubble size = RPK
    market share, glow = traffic/momentum strength, soft red ring = negative or
-   weak). It has metric / view / period filters, a hover tooltip per region,
-   click-to-drill into a region, a regional trend chart, a snapshot heatmap,
-   and a regional comparison table. Uses IATA regional data only.
+   weak), each labelled with the region name and its current value. It has
+   metric / view / period filters, a hover tooltip per region, click-to-drill
+   into a region, a regional trend chart with a time-range picker, an
+   all-regions snapshot heatmap, and a regional comparison table. Uses IATA
+   regional data only.
 2. **TSA Overview** — daily U.S. airport security (TSA) checkpoint passenger
    numbers: headline figures, four charts, a daily table, a calendar heatmap,
    and short takeaways.

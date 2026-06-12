@@ -27,14 +27,18 @@ URL = ("https://raw.githubusercontent.com/martynafford/natural-earth-geojson/"
        "master/110m/physical/ne_110m_land.json")
 
 # ---- projection window (drop most of Antarctica; keep populated latitudes) ----
-LAT_TOP = 84.0     # top edge of the map, degrees north
-LAT_BOT = -56.0    # bottom edge, degrees south
-WIDTH = 1000.0     # equirectangular: 360 deg of longitude -> WIDTH px
-K = WIDTH / 360.0  # px per degree (equal scale on both axes => true plate carree)
-HEIGHT = round((LAT_TOP - LAT_BOT) * K)
+LAT_TOP = 74.0     # top edge of the map, degrees north
+LAT_BOT = -54.0    # bottom edge, degrees south
+WIDTH = 1000.0     # 360 deg of longitude -> WIDTH px
+K = WIDTH / 360.0  # px per degree of longitude
+# Latitude is gently compressed (stylised flat-map look) so the hero map is
+# short and wide — a presentation choice only; the data stays regional.
+YSQUASH = 0.62
+KY = K * YSQUASH
+HEIGHT = round((LAT_TOP - LAT_BOT) * KY)
 
 # ---- dot grid ----
-STEP = 10.5        # spacing between dots in projected px
+STEP = 9.0         # spacing between dots in projected px
 STAGGER = True     # offset alternate rows for a softer halftone pattern
 
 
@@ -59,7 +63,7 @@ def polygons(geojson):
 
 def project(lon, lat):
     x = (lon + 180.0) * K
-    y = (LAT_TOP - lat) * K
+    y = (LAT_TOP - lat) * KY
     return x, y
 
 
@@ -111,7 +115,7 @@ def main():
         x = x0
         while x < WIDTH:
             lon = x / K - 180.0
-            lat = LAT_TOP - y / K
+            lat = LAT_TOP - y / KY
             if is_land(lon, lat):
                 dots.append((round(x), round(y)))
             x += STEP
@@ -150,6 +154,7 @@ def main():
         "latTop": LAT_TOP,
         "latBot": LAT_BOT,
         "k": round(K, 5),
+        "ky": round(KY, 5),
         "dots": dots,
         "landPath": land_path,
     }

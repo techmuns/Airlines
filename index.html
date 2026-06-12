@@ -4,52 +4,67 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Airline Demand Monitor</title>
-  <meta name="description" content="Airline passenger demand and regional aviation traffic — a clean aviation research dashboard." />
+  <meta name="description" content="Airline passenger demand and regional aviation traffic — a premium dark aviation research dashboard." />
   <link rel="stylesheet" href="assets/css/theme.css" />
   <link rel="stylesheet" href="assets/css/components.css" />
   <link rel="stylesheet" href="assets/css/map.css" />
 </head>
-<body class="gdm-dark">
-  <header class="app-header">
-    <div class="app-header__inner">
-      <div class="brand">
-        <div class="brand__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 16.21v-1.6a.9.9 0 0 0-.46-.78L14 9.5V4a2 2 0 0 0-4 0v5.5l-7.54 4.33a.9.9 0 0 0-.46.78v1.6c0 .3.29.52.58.43L10 14.2v4.04l-1.78 1.32a.6.6 0 0 0-.22.47v.74c0 .26.25.45.5.38L12 20.4l3.5.75c.25.07.5-.12.5-.38v-.74a.6.6 0 0 0-.22-.47L14 18.24V14.2l7.42 2.44c.29.09.58-.13.58-.43Z"/></svg>
+<body>
+  <div class="shell">
+    <header class="app-header">
+      <div class="app-header__inner">
+        <div class="brand">
+          <div class="brand__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 16.21v-1.6a.9.9 0 0 0-.46-.78L14 9.5V4a2 2 0 0 0-4 0v5.5l-7.54 4.33a.9.9 0 0 0-.46.78v1.6c0 .3.29.52.58.43L10 14.2v4.04l-1.78 1.32a.6.6 0 0 0-.22.47v.74c0 .26.25.45.5.38L12 20.4l3.5.75c.25.07.5-.12.5-.38v-.74a.6.6 0 0 0-.22-.47L14 18.24V14.2l7.42 2.44c.29.09.58-.13.58-.43Z"/></svg>
+          </div>
+          <div>
+            <div class="brand__title">Airline Demand Monitor</div>
+            <div class="brand__subtitle">Global Airline Traffic &amp; Regional Performance</div>
+          </div>
         </div>
-        <div>
-          <div class="brand__title">Airline Demand Monitor</div>
-          <div class="brand__subtitle">Global Airline Traffic &amp; Regional Performance</div>
+        <div class="header-meta">
+          <div class="header-meta__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/></svg>
+          </div>
+          <div>
+            <div class="header-meta__line1" id="meta-asof">Data as of: …</div>
+            <div class="header-meta__line2" id="meta-period">Data Period: …</div>
+          </div>
+          <button class="header-iconbtn" id="header-export" type="button" title="Download the regional airline figures as a spreadsheet file (CSV)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v11m0 0l-4-4m4 4 4-4M5 19h14"/></svg>
+            Export
+          </button>
         </div>
       </div>
-      <div class="header-meta">
-        <div class="header-meta__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/></svg>
-        </div>
-        <div>
-          <div class="header-meta__line1" id="meta-asof">Data as of: …</div>
-          <div class="header-meta__line2" id="meta-period">Data Period: …</div>
-        </div>
-      </div>
-    </div>
-  </header>
+    </header>
 
-  <nav class="tabs" role="tablist" aria-label="Dashboard sections">
-    <button class="tab is-active" id="tab-map" role="tab">Global Demand Map</button>
-    <button class="tab" id="tab-tsa" role="tab">TSA Overview</button>
-    <button class="tab" id="tab-iata" role="tab">Airline Traffic &amp; Regional</button>
-  </nav>
+    <nav class="tabs" role="tablist" aria-label="Dashboard sections">
+      <button class="tab is-active" id="tab-map" role="tab">
+        <span class="tab__ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg></span>
+        Global Demand Map
+      </button>
+      <button class="tab" id="tab-tsa" role="tab">
+        <span class="tab__ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l7 2.8v5.4c0 4.5-2.9 7.6-7 9.3-4.1-1.7-7-4.8-7-9.3V5.8L12 3z"/><path d="M9 11.8l2.2 2.2 4-4.4"/></svg></span>
+        TSA Overview
+      </button>
+      <button class="tab" id="tab-iata" role="tab">
+        <span class="tab__ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 21V11M12 21V5M19 21v-8M3 21h18"/></svg></span>
+        Airline Traffic &amp; Regional
+      </button>
+    </nav>
 
-  <main class="container">
-    <div class="status-banner" id="status">Loading dashboard data…</div>
-    <section class="tabpanel" id="panel-map" role="tabpanel" aria-labelledby="tab-map"></section>
-    <section class="tabpanel" id="panel-tsa" role="tabpanel" aria-labelledby="tab-tsa" hidden></section>
-    <section class="tabpanel" id="panel-iata" role="tabpanel" aria-labelledby="tab-iata" hidden></section>
-  </main>
+    <main class="container">
+      <div class="status-banner" id="status">Loading dashboard data…</div>
+      <section class="tabpanel" id="panel-map" role="tabpanel" aria-labelledby="tab-map"></section>
+      <section class="tabpanel" id="panel-tsa" role="tabpanel" aria-labelledby="tab-tsa" hidden></section>
+      <section class="tabpanel" id="panel-iata" role="tabpanel" aria-labelledby="tab-iata" hidden></section>
+    </main>
 
-  <footer class="app-footer">
-    Airline Demand Monitor · TSA and IATA data are kept separate · The dashboard refreshes
-    automatically whenever new data is published · Preview uses sample data until the live feed is connected.
-  </footer>
+    <footer class="app-footer">
+      Airline Demand Monitor · TSA and IATA data are kept separate · The dashboard refreshes
+      automatically whenever new data is published · Preview uses sample data until the live feed is connected.
+    </footer>
+  </div>
 
   <!-- vendored Chart.js (self-contained, no external CDN at runtime) -->
   <script src="assets/js/lib/chart.umd.js"></script>

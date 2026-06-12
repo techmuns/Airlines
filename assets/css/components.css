@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Airline Demand Monitor — Components (soft premium, blue-tinted)
+   Airline Demand Monitor — Components (premium dark)
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -22,8 +22,9 @@
 .kpi__tile {
   width: 36px; height: 36px; flex: none;
   border-radius: 9px;
-  background: linear-gradient(150deg, var(--navy-800), var(--navy-600));
-  color: #fff;
+  background: linear-gradient(150deg, #1c2f58, #10203f);
+  border: 1px solid rgba(217, 179, 106, .25);
+  color: var(--gold-soft);
   display: grid; place-items: center;
   box-shadow: var(--shadow-sm);
 }
@@ -33,7 +34,7 @@
   text-transform: uppercase; color: var(--text-muted);
 }
 .kpi__value {
-  font-size: 21px; font-weight: 600; color: var(--navy-850);
+  font-size: 21px; font-weight: 600; color: #eef2fa;
   line-height: 1.12; margin-top: 4px; letter-spacing: -.2px;
 }
 .kpi__value.pos { color: var(--pos); }
@@ -59,9 +60,8 @@
   margin-top: 9px;
   height: 210px;
   background: var(--card-2);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(141, 163, 205, .14);
   border-radius: 9px;
-  box-shadow: inset 0 1px 2px rgba(40, 55, 90, .03);
 }
 .chart-card__canvas.tall { height: 234px; }
 
@@ -91,8 +91,8 @@
 table.data { font-size: 11.5px; }
 table.data thead th {
   position: sticky; top: 0; z-index: 1;
-  background: #e7eef8;
-  color: var(--navy-700);
+  background: var(--tint);
+  color: #8fa1c0;
   font-size: 9.5px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase;
   text-align: right;
   padding: 9px 14px;
@@ -104,13 +104,13 @@ table.data tbody td:first-child { text-align: left; }
 table.data tbody td {
   padding: 7px 14px;
   text-align: right;
-  border-bottom: 1px solid rgba(40, 55, 90, .055);
+  border-bottom: 1px solid rgba(141, 163, 205, .09);
   white-space: nowrap;
 }
-table.data tbody tr:nth-child(even) { background: rgba(255, 255, 255, .42); }
-table.data tbody tr:hover { background: rgba(90, 130, 189, .1); }
-table.data .date { font-weight: 500; color: var(--navy-700); }
-table.data .strong { font-weight: 600; color: var(--navy-850); }
+table.data tbody tr:nth-child(even) { background: rgba(255, 255, 255, .022); }
+table.data tbody tr:hover { background: rgba(123, 167, 218, .10); }
+table.data .date { font-weight: 500; color: #c7d2e8; }
+table.data .strong { font-weight: 600; color: #eef2fa; }
 .pct.pos { color: var(--pos); font-weight: 500; }
 .pct.neg { color: var(--neg); font-weight: 500; }
 .muted-cell { color: var(--text-faint); }
@@ -130,15 +130,15 @@ table.data .strong { font-weight: 600; color: var(--navy-850); }
 .cal__btn {
   width: 28px; height: 28px; border-radius: 8px;
   border: 1px solid var(--border-strong); background: var(--frost);
-  color: var(--navy-700); display: grid; place-items: center;
-  transition: background .15s ease, box-shadow .15s ease;
+  color: var(--text-muted); display: grid; place-items: center;
+  transition: background .15s ease, color .15s ease, box-shadow .15s ease;
 }
-.cal__btn:hover { background: #fff; box-shadow: var(--shadow-sm); }
+.cal__btn:hover { background: rgba(255, 255, 255, .07); color: var(--gold-soft); box-shadow: var(--shadow-sm); }
 .cal__btn:disabled { opacity: .35; cursor: default; }
 .cal__btn svg { width: 16px; height: 16px; }
 .cal__month {
   min-width: 144px; text-align: center;
-  font-weight: 600; font-size: 13px; color: var(--navy-850);
+  font-weight: 600; font-size: 13px; color: #eef2fa;
   border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px;
   background: var(--frost);
 }
@@ -152,9 +152,9 @@ table.data .strong { font-weight: 600; color: var(--navy-850); }
   position: relative;
   min-height: 50px;
   border-radius: 7px;
-  border: 1px solid rgba(40, 55, 90, .04);
+  border: 1px solid rgba(141, 163, 205, .08);
   padding: 4px 6px;
-  background: rgba(255, 255, 255, .5);
+  background: rgba(255, 255, 255, .025);
 }
 .cal__cell.is-out { background: transparent; border-color: transparent; }
 .cal__cell.lvl-high { background: var(--hm-strong-pos); }
@@ -163,7 +163,7 @@ table.data .strong { font-weight: 600; color: var(--navy-850); }
 .cal__day { font-size: 10px; font-weight: 600; color: var(--hm-ink); opacity: .72; }
 .cal__cell.is-out .cal__day { color: var(--text-faint); opacity: .5; }
 .cal__val {
-  font-size: 12px; font-weight: 600; color: var(--navy-850);
+  font-size: 12px; font-weight: 600; color: #eef2fa;
   font-variant-numeric: tabular-nums;
   position: absolute; left: 0; right: 0; bottom: 6px; text-align: center;
 }
@@ -182,30 +182,30 @@ table.data .strong { font-weight: 600; color: var(--navy-850); }
 .hm-scroll { overflow-x: auto; }
 
 table.hm { font-size: 11.5px; }
-table.hm th, table.hm td { border: 1px solid var(--border); }
+table.hm th, table.hm td { border: 1px solid rgba(141, 163, 205, .14); }
 
 table.hm thead .grp th {
-  background: var(--navy-800); color: #fff;
+  background: #101d36; color: var(--gold-bright);
   font-size: 10.5px; font-weight: 600; letter-spacing: .4px;
   text-transform: uppercase; padding: 8px 11px; text-align: center;
-  border-color: var(--navy-700);
+  border-color: rgba(141, 163, 205, .18);
 }
-table.hm thead .grp th.spacer { background: var(--navy-850); }
+table.hm thead .grp th.spacer { background: #0d1830; }
 table.hm thead .sub th {
-  background: #e7eef8; color: var(--navy-700);
+  background: var(--tint); color: #8fa1c0;
   font-size: 9.5px; font-weight: 600; letter-spacing: .3px;
   text-transform: uppercase; padding: 6px 10px; text-align: center;
   white-space: nowrap;
 }
 table.hm thead .sub th.rowlab,
-table.hm tbody td.rowlab { text-align: left; white-space: nowrap; background: #e7eef8; }
+table.hm tbody td.rowlab { text-align: left; white-space: nowrap; background: var(--tint); }
 table.hm tbody td.rowlab {
-  font-weight: 600; color: var(--navy-700); background: var(--frost);
+  font-weight: 600; color: #ccd7ec; background: var(--frost);
   padding: 8px 11px;
 }
 table.hm tbody td.rowlab .ico {
   display: inline-grid; place-items: center; vertical-align: -3px;
-  margin-right: 7px; color: var(--navy-600);
+  margin-right: 7px; color: var(--gold);
 }
 table.hm tbody td.rowlab .ico svg { width: 14px; height: 14px; }
 table.hm tbody td.val {
@@ -214,7 +214,7 @@ table.hm tbody td.val {
   min-width: 76px;
 }
 table.hm tbody tr.is-industry td.rowlab { background: var(--blue-100); }
-table.hm tbody tr.is-industry td.val { box-shadow: inset 0 0 0 9999px rgba(90, 130, 189, .06); }
+table.hm tbody tr.is-industry td.val { box-shadow: inset 0 0 0 9999px rgba(123, 167, 218, .07); }
 
 /* soft heatmap fills */
 .fill-spos { background: var(--hm-strong-pos); }
@@ -234,11 +234,12 @@ table.hm tbody tr.is-industry td.val { box-shadow: inset 0 0 0 9999px rgba(90, 1
 .insight { display: flex; gap: 13px; padding: 16px 18px; align-items: flex-start; }
 .insight__icon {
   width: 36px; height: 36px; flex: none; border-radius: 50%;
-  background: linear-gradient(150deg, var(--navy-800), var(--navy-600));
-  color: #fff; display: grid; place-items: center;
+  background: linear-gradient(150deg, #1c2f58, #10203f);
+  border: 1px solid rgba(217, 179, 106, .25);
+  color: var(--gold-soft); display: grid; place-items: center;
   box-shadow: var(--shadow-sm);
 }
 .insight__icon svg { width: 18px; height: 18px; }
-.insight__title { font-size: 13px; font-weight: 600; color: var(--navy-850); margin-bottom: 4px; }
+.insight__title { font-size: 13px; font-weight: 600; color: #f0e6cd; margin-bottom: 4px; }
 .insight__body { font-size: 12px; font-weight: 400; color: var(--text-muted); line-height: 1.5; }
 .insight__body b { color: var(--text); font-weight: 600; }

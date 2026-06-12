@@ -1,132 +1,28 @@
 /* ==========================================================================
    Airline Demand Monitor — Global Demand Map (landing tab)
-   Premium dark aviation theme: near-black navy page, gold-bordered hero map,
-   radar-style glowing gold bubbles, dark analytical cards. The dark page
-   chrome applies only while this tab is active (body.gdm-dark); the layout
-   is identical to the light tabs' structure.
+   Hero world map: short, wide, near-black navy with radar-style glowing gold
+   bubbles, floating legend and gold-edged card. Layout mirrors the premium
+   reference: controls bar → map → trend + snapshot → comparison table.
    ========================================================================== */
-
-/* --------------------------------------------------------------------------
-   Dark page chrome (active only on this tab)
-   -------------------------------------------------------------------------- */
-body.gdm-dark {
-  background-color: #060b16;
-  background-image:
-    radial-gradient(900px 420px at 50% -6%, rgba(67, 96, 156, .20), rgba(0, 0, 0, 0) 60%),
-    linear-gradient(180deg, #081021 0%, #060b16 55%, #04070e 100%);
-}
-body.gdm-dark .app-header {
-  background: linear-gradient(108deg, #0a1530 0%, #0c1a38 60%, #0e1f42 100%);
-}
-body.gdm-dark .tab {
-  background: #0c1526;
-  color: #94a2bf;
-  border-color: #1c2a47;
-  box-shadow: none;
-}
-body.gdm-dark .tab:hover { background: #111d33; color: #e6ecf7; }
-body.gdm-dark .tab.is-active {
-  background: #13213c;
-  color: #f3e9d2;
-  border-color: #13213c;
-  border-bottom-color: var(--gold);
-}
-body.gdm-dark .status-banner { background: #0c1626; border-color: #1e2d4d; color: #94a2bf; }
-body.gdm-dark .app-footer { color: #576481; }
 
 .gdm-stack { display: flex; flex-direction: column; gap: var(--gap); }
 
-/* dark card base for everything inside this tab */
-#panel-map .card {
-  background: #0c1626;
-  border-color: #1e2d4d;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
-}
-#panel-map .card:hover { box-shadow: 0 14px 38px rgba(0, 0, 0, .48); transform: translateY(-1px); }
-
-/* gold serif card/section titles (reference style) */
-#panel-map .section-head {
-  background: linear-gradient(180deg, rgba(255, 255, 255, .025), rgba(255, 255, 255, 0));
-  box-shadow: none;
-  border-bottom: 1px solid rgba(217, 179, 106, .18);
-}
-#panel-map .section-head__title {
-  font-family: var(--font-display);
-  font-size: 13.5px;
-  font-weight: 600;
-  letter-spacing: .4px;
-  text-transform: none;
-  color: #d9b36a;
-}
-#panel-map .section-head__title .ico { color: #c9a85c; }
-#panel-map .card-title {
-  font-family: var(--font-display);
-  font-size: 13.5px;
-  letter-spacing: .4px;
-  text-transform: none;
-  color: #d9b36a;
-}
-#panel-map .card-title .ico { color: #c9a85c; }
-#panel-map .card-sub { color: #8b99b6; }
-#panel-map .chart-card__canvas {
-  background: #0a1322;
-  border-color: rgba(141, 163, 205, .14);
-  box-shadow: none;
-}
-#panel-map .source-note { color: #76849f; }
-#panel-map .source-note b { color: #cfd9ec; }
-
 /* --------------------------------------------------------------------------
-   Tab header
+   Controls bar (between the tabs and the map)
    -------------------------------------------------------------------------- */
-.gdm-head {
-  display: flex; align-items: flex-end; justify-content: space-between;
-  gap: 20px; flex-wrap: wrap; padding: 2px 2px 0;
-}
-.gdm-head__title {
-  font-family: var(--font-display);
-  font-size: 24px; font-weight: 600; letter-spacing: .4px;
-  color: #d9b36a; line-height: 1.1;
-}
-.gdm-head__sub { font-size: 12.5px; color: #9aa8c4; margin-top: 5px; letter-spacing: .1px; }
-.gdm-head__meta { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
-.gdm-chip {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-size: 11.5px; font-weight: 500; color: #e8d3a0;
-  background: rgba(217, 179, 106, .10);
-  border: 1px solid rgba(217, 179, 106, .38);
-  border-radius: 999px; padding: 5px 12px;
-}
-.gdm-chip .ico { color: var(--gold); display: grid; place-items: center; }
-.gdm-chip .ico svg { width: 13px; height: 13px; }
-.gdm-head__src { font-size: 11px; color: #6e7c98; }
-
-/* --------------------------------------------------------------------------
-   Hero map card (gold-edged dark panel: bar + map)
-   -------------------------------------------------------------------------- */
-#panel-map .gdm-map-card {
-  padding: 0;
-  background: #081120;
-  border: 1px solid rgba(201, 168, 92, .38);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, .5);
-}
-#panel-map .gdm-map-card:hover { transform: none; box-shadow: 0 18px 48px rgba(0, 0, 0, .5); }
-
-.gdm-mapbar {
+.gdm-controlbar {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 16px 22px; flex-wrap: wrap;
-  padding: 13px 18px;
-  border-bottom: 1px solid rgba(217, 179, 106, .14);
-  background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, 0));
+  gap: 12px 22px; flex-wrap: wrap;
+  padding: 9px 14px;
 }
-.gdm-mapbar__lead { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.gdm-mapbar__eyebrow {
-  font-size: 9.5px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase;
-  color: var(--gold-soft);
+.gdm-controlbar__meta {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11.5px; font-weight: 500; color: var(--text-muted);
+  padding-right: 4px; white-space: nowrap;
 }
-.gdm-mapbar__now { font-size: 13px; font-weight: 500; color: #eaf0fb; letter-spacing: .2px; }
+.gdm-controlbar__meta .ico { color: var(--gold); display: grid; place-items: center; }
+.gdm-controlbar__meta .ico svg { width: 13px; height: 13px; }
 
-/* segmented controls */
 .gdm-controls { display: flex; align-items: center; gap: 10px 12px; flex-wrap: wrap; }
 .gdm-seg {
   display: flex; align-items: center; gap: 9px;
@@ -156,15 +52,26 @@ body.gdm-dark .app-footer { color: #576481; }
 .gdm-seg.is-disabled { opacity: .4; }
 .gdm-seg.is-disabled .gdm-seg__btn { pointer-events: none; }
 
-/* the map surface */
+/* --------------------------------------------------------------------------
+   Hero map card (gold-edged, short & wide)
+   -------------------------------------------------------------------------- */
+.gdm-map-card {
+  padding: 0;
+  background: #060d1a;
+  border: 1px solid rgba(201, 168, 92, .35);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .5);
+}
+.gdm-map-card:hover { transform: none; box-shadow: 0 18px 48px rgba(0, 0, 0, .5); border-color: rgba(201, 168, 92, .35); }
+
 .gdm-map { position: relative; }
 .gdm-map__svg { display: block; width: 100%; height: auto; }
 
 /* SVG layers */
-.gdm-grat line { stroke: rgba(150, 180, 225, .08); stroke-width: .6; }
-.gdm-grat line.is-eq { stroke: rgba(150, 180, 225, .12); }
-.gdm-land { fill: rgba(120, 152, 208, .05); }
+.gdm-grat line { stroke: rgba(150, 180, 225, .07); stroke-width: .5; }
+.gdm-grat line.is-eq { stroke: rgba(150, 180, 225, .11); }
+.gdm-land { fill: rgba(116, 148, 200, .06); stroke: rgba(150, 182, 228, .14); stroke-width: .5; }
 .gdm-dots circle { fill: rgba(151, 179, 223, .20); }
+.gdm-dots circle.is-warm { fill: rgba(217, 179, 106, .34); }
 
 /* bubbles: radar rings + glowing core + side label */
 .gdm-bubbles { animation: gdmFade .32s ease; }
@@ -175,14 +82,14 @@ body.gdm-dark .app-footer { color: #576481; }
 }
 .gdm-bubble:hover, .gdm-bubble:focus { filter: brightness(1.18); }
 .gdm-bubble__name {
-  fill: #e3c27e; font-size: 10px; font-weight: 600; letter-spacing: 1.1px;
+  fill: #e3c27e; font-size: 9.5px; font-weight: 600; letter-spacing: 1.1px;
   font-family: var(--font); pointer-events: none;
-  paint-order: stroke; stroke: rgba(4, 9, 20, .8); stroke-width: 2.6px;
+  paint-order: stroke; stroke: rgba(3, 7, 16, .8); stroke-width: 2.6px;
 }
 .gdm-bubble__val {
-  fill: #f2f5fb; font-size: 12.5px; font-weight: 600;
+  fill: #f2f5fb; font-size: 12px; font-weight: 600;
   font-family: var(--font); font-variant-numeric: tabular-nums; pointer-events: none;
-  paint-order: stroke; stroke: rgba(4, 9, 20, .8); stroke-width: 2.6px;
+  paint-order: stroke; stroke: rgba(3, 7, 16, .8); stroke-width: 2.6px;
 }
 .gdm-bubble:hover .gdm-bubble__name,
 .gdm-bubble:focus .gdm-bubble__name,
@@ -191,16 +98,16 @@ body.gdm-dark .app-footer { color: #576481; }
 
 /* floating in-map legend */
 .gdm-maplegend {
-  position: absolute; left: 16px; bottom: 14px; z-index: 4;
-  background: rgba(6, 12, 25, .74);
+  position: absolute; left: 16px; bottom: 13px; z-index: 4;
+  background: rgba(5, 10, 21, .76);
   border: 1px solid rgba(217, 179, 106, .3);
   border-radius: 10px;
-  padding: 10px 13px;
+  padding: 9px 12px;
   pointer-events: none;
   backdrop-filter: blur(3px);
 }
 .gdm-maplegend__title { font-size: 10.5px; font-weight: 600; letter-spacing: .3px; color: #e8d3a0; }
-.gdm-maplegend__scale { display: flex; align-items: center; gap: 7px; margin-top: 7px; }
+.gdm-maplegend__scale { display: flex; align-items: center; gap: 7px; margin-top: 6px; }
 .gdm-maplegend__dot {
   border-radius: 50%; flex: none;
   background: radial-gradient(circle at 35% 32%, #fff3d8, #d9b36a 70%);
@@ -210,7 +117,7 @@ body.gdm-dark .app-footer { color: #576481; }
   font-size: 9px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase;
   color: #8fa1c0;
 }
-.gdm-maplegend__note { margin-top: 6px; font-size: 9.5px; color: #7d8aa6; }
+.gdm-maplegend__note { margin-top: 5px; font-size: 9.5px; color: #7d8aa6; }
 
 /* tooltip */
 .gdm-tooltip {
@@ -235,105 +142,53 @@ body.gdm-dark .app-footer { color: #576481; }
 .gdm-tip__val.neg { color: #e8a89f; }
 
 /* --------------------------------------------------------------------------
-   Selected-region panel (dark)
+   Lower split: trend chart + all-regions snapshot
    -------------------------------------------------------------------------- */
-.gdm-region-card { padding: 0; }
-.gdm-region { display: flex; align-items: stretch; flex-wrap: wrap; }
-.gdm-region__id {
-  display: flex; align-items: center; gap: 13px;
-  padding: 15px 20px; min-width: 240px; flex: 0 0 auto;
-  border-right: 1px solid #1e2d4d;
-  background: linear-gradient(120deg, rgba(217, 179, 106, .08), rgba(217, 179, 106, 0));
-}
-.gdm-region__icon {
-  width: 38px; height: 38px; flex: none; border-radius: 10px;
-  background: linear-gradient(150deg, #1c2f58, #10203f);
-  color: #ddc287; display: grid; place-items: center;
-  border: 1px solid rgba(217, 179, 106, .25);
-}
-.gdm-region__icon svg { width: 19px; height: 19px; }
-.gdm-region__eyebrow {
-  font-size: 9px; font-weight: 600; letter-spacing: .55px; text-transform: uppercase;
-  color: #8fa1c0;
-}
-.gdm-region__name {
-  font-family: var(--font-display);
-  font-size: 18px; font-weight: 600; color: #f0e6cd; margin-top: 2px; letter-spacing: .3px;
-}
-.gdm-badge {
-  margin-left: 4px; align-self: center;
-  font-size: 10px; font-weight: 600; letter-spacing: .45px; text-transform: uppercase;
-  padding: 4px 11px; border-radius: 999px; white-space: nowrap;
-}
-.gdm-badge.is-strong { background: rgba(64, 168, 118, .18); color: #84d6ab; }
-.gdm-badge.is-stable { background: rgba(201, 168, 92, .16); color: #dcc084; }
-.gdm-badge.is-weak { background: rgba(196, 88, 79, .18); color: #e8a89f; }
-
-.gdm-stats { display: flex; flex: 1; flex-wrap: wrap; min-width: 0; }
-.gdm-stat {
-  flex: 1 1 0; min-width: 104px; padding: 13px 16px;
-  border-right: 1px solid rgba(141, 163, 205, .12);
-  border-bottom: 1px solid rgba(141, 163, 205, .12);
-}
-.gdm-stat:last-child { border-right: none; }
-.gdm-stat__lab {
-  font-size: 9px; font-weight: 500; letter-spacing: .5px; text-transform: uppercase;
-  color: #8093b4;
-}
-.gdm-stat__val { font-size: 17px; font-weight: 600; color: #eef2fa; margin-top: 4px; letter-spacing: -.2px; }
-.gdm-stat__val.pos { color: #7fd1a5; }
-.gdm-stat__val.neg { color: #e8a89f; }
-
-/* --------------------------------------------------------------------------
-   Lower split: trend chart + snapshot heatmap
-   -------------------------------------------------------------------------- */
-.gdm-split { grid-template-columns: 1.4fr 1fr; align-items: start; }
+.gdm-split { grid-template-columns: 1.25fr 1fr; align-items: stretch; }
 @media (max-width: 1000px) { .gdm-split { grid-template-columns: 1fr; } }
-.gdm-trend .gdm-trend__canvas { height: 300px; }
-
-.gdm-snap-hl td.rowlab { background: rgba(90, 130, 189, .14); }
-.gdm-snap-hl td.val { font-weight: 600; }
-
-/* --------------------------------------------------------------------------
-   Dark heatmap tables (snapshot + comparison), scoped to this tab only
-   -------------------------------------------------------------------------- */
-#panel-map table.hm th, #panel-map table.hm td { border-color: rgba(141, 163, 205, .14); }
-#panel-map table.hm thead .grp th {
-  background: #101d36; color: #d9b36a;
-  border-color: rgba(141, 163, 205, .18);
+.gdm-trend .gdm-trend__canvas { height: 252px; }
+.gdm-trend__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 30px;
 }
-#panel-map table.hm thead .grp th.spacer { background: #0d1830; }
-#panel-map table.hm thead .sub th { background: #0c1628; color: #8fa1c0; }
-#panel-map table.hm thead .sub th.rowlab,
-#panel-map table.hm tbody td.rowlab { background: #0c1628; }
-#panel-map table.hm tbody td.rowlab { color: #ccd7ec; }
-#panel-map table.hm tbody td.rowlab .ico { color: #c9a85c; }
-#panel-map table.hm tbody td.val { color: #dfe6f3; }
+.gdm-rangesel {
+  appearance: none;
+  background: rgba(5, 11, 24, .65);
+  border: 1px solid rgba(217, 179, 106, .25);
+  color: #d9c389;
+  font-family: var(--font); font-size: 10.5px; font-weight: 600; letter-spacing: .3px;
+  border-radius: 8px; padding: 5px 24px 5px 10px;
+  background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23c9a85c'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 9px center;
+  cursor: pointer;
+}
+.gdm-rangesel:hover { border-color: rgba(217, 179, 106, .45); color: #f3e4c0; }
 
-/* soft dark heatmap fills */
-#panel-map .fill-spos { background: rgba(64, 168, 118, .32); }
-#panel-map .fill-mpos { background: rgba(64, 168, 118, .17); }
-#panel-map .fill-neu  { background: rgba(201, 168, 92, .16); }
-#panel-map .fill-mneg { background: rgba(196, 88, 79, .18); }
-#panel-map .fill-sneg { background: rgba(196, 88, 79, .34); }
-#panel-map .fill-none { background: rgba(255, 255, 255, .02); color: #7d8aa6; }
+.gdm-sechead-note { font-size: 10.5px; font-weight: 500; color: var(--text-muted); letter-spacing: .2px; }
 
-#panel-map .matrix-note { color: #6e7c98; }
-
-/* comparison rows (clickable drill-down) */
+/* snapshot & comparison rows are clickable */
+table.hm tbody tr.gdm-snap-row,
 table.hm tbody tr.gdm-cmp-row { cursor: pointer; transition: box-shadow .15s ease; }
-#panel-map table.hm tbody tr.gdm-cmp-row:hover td { box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, .045); }
-#panel-map table.hm tbody tr.gdm-cmp-row.is-selected td.rowlab {
+table.hm tbody tr.gdm-snap-row:hover td,
+table.hm tbody tr.gdm-cmp-row:hover td { box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, .045); }
+table.hm tbody tr.gdm-snap-row.is-selected td.rowlab,
+table.hm tbody tr.gdm-cmp-row.is-selected td.rowlab {
   box-shadow: inset 3px 0 0 var(--gold);
-  background: #122142;
+  background: var(--blue-100);
   color: #f0e6cd;
 }
-#panel-map table.hm tbody tr.gdm-cmp-row.is-selected td.val {
+table.hm tbody tr.gdm-cmp-row.is-selected td.val,
+table.hm tbody tr.gdm-snap-row.is-selected td.val {
   outline: 1px solid rgba(201, 168, 92, .35); outline-offset: -1px;
 }
 
+/* comparison: single header row with two-line column heads */
+table.hm thead .gdm-cmp-head th { padding: 7px 10px; }
+.gdm-th__lab { font-size: 9.5px; font-weight: 600; letter-spacing: .3px; }
+.gdm-th__unit { font-size: 8.5px; font-weight: 500; color: var(--text-faint); margin-top: 1px; text-transform: none; letter-spacing: .2px; }
+table.hm.gdm-cmptbl tbody td.val { min-width: 84px; }
+table.hm.gdm-snaptbl tbody td.val { min-width: 64px; }
+
 @media (max-width: 720px) {
-  .gdm-head__title { font-size: 21px; }
-  .gdm-region__id { width: 100%; flex-basis: 100%; border-right: none; border-bottom: 1px solid #1e2d4d; }
   .gdm-maplegend { display: none; }
 }
