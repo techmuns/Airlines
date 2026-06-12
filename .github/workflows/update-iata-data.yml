@@ -20,6 +20,10 @@ on:
         description: "run = fetch & update (default); diagnose = just list links IATA exposes"
         required: false
         default: "run"
+      backfill:
+        description: "Optional: space-separated months to back-fill, e.g. '2026-01 2026-02 2026-03'"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -55,8 +59,23 @@ jobs:
         if: ${{ github.event.inputs.mode == 'diagnose' }}
         run: node tools/fetch_iata_pdf.js --diagnose
 
+      - name: Back-fill specific months
+        if: ${{ github.event.inputs.mode != 'diagnose' && github.event.inputs.backfill != '' }}
+        run: |
+          for ym in ${{ github.event.inputs.backfill }}; do
+            mon=$(date -u -d "${ym}-01" +%B | tr '[:upper:]' '[:lower:]')
+            yr=${ym%-*}
+            url="https://www.iata.org/en/iata-repository/publications/economic-reports/air-passenger-market-analysis-${mon}-${yr}/"
+            echo "=== back-fill ${ym} -> ${url} ==="
+            if node tools/fetch_iata_pdf.js --url "$url" --out /tmp/m.pdf; then
+              python tools/iata_etl.py --pdf /tmp/m.pdf || echo "::warning::parse failed for ${ym}"
+            else
+              echo "::warning::no report downloaded for ${ym}"
+            fi
+          done
+
       - name: Fetch & update IATA data
-        if: ${{ github.event.inputs.mode != 'diagnose' }}
+        if: ${{ github.event.inputs.mode != 'diagnose' && github.event.inputs.backfill == '' }}
         run: |
           set -o pipefail
           if [ -n "${{ github.event.inputs.pdf_url }}" ]; then
