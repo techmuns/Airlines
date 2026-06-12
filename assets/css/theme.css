@@ -72,6 +72,8 @@
 
   --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           "Helvetica Neue", Arial, sans-serif;
+  /* elegant display serif for the brand & premium card titles */
+  --font-display: Georgia, "Palatino Linotype", "Book Antiqua", "Times New Roman", serif;
 }
 
 /* --- reset --- */
@@ -128,11 +130,12 @@ a { color: var(--blue); }
 }
 .brand__icon svg { width: 27px; height: 27px; }
 .brand__title {
-  font-size: 18px;
+  font-family: var(--font-display);
+  font-size: 19px;
   font-weight: 600;
-  letter-spacing: .2px;
+  letter-spacing: .4px;
   line-height: 1.12;
-  color: #fff;
+  color: #d9b36a;
 }
 .brand__subtitle {
   font-size: 11px;

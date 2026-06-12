@@ -144,23 +144,25 @@
       el('div', { class: 'gdm-controls' }, [metricSeg.el, viewSeg.el, periodSeg.el])
     ]);
 
-    /* legend / encoding key */
-    var legend = el('div', { class: 'gdm-legend' }, [
-      el('span', { class: 'gdm-legend__item' }, [
-        el('span', { class: 'gdm-legend__dot is-lg' }), 'Bubble size — ', el('strong', { text: 'RPK market share' })
+    /* floating in-map legend (lower-left, like a chart key) */
+    function legendDot(d, o) {
+      return el('span', { class: 'gdm-maplegend__dot',
+        style: 'width:' + d + 'px;height:' + d + 'px;opacity:' + o });
+    }
+    var legendTitle = el('div', { class: 'gdm-maplegend__title' });
+    var legendBox = el('div', { class: 'gdm-maplegend' }, [
+      legendTitle,
+      el('div', { class: 'gdm-maplegend__scale' }, [
+        el('span', { class: 'gdm-maplegend__cap', text: 'Lower' }),
+        legendDot(5, 0.4), legendDot(7, 0.6), legendDot(9, 0.8), legendDot(12, 1),
+        el('span', { class: 'gdm-maplegend__cap', text: 'Higher' })
       ]),
-      el('span', { class: 'gdm-legend__item' }, [
-        el('span', { class: 'gdm-legend__dot is-strong' }), 'Bright gold — ', el('strong', { text: 'stronger demand / momentum' })
-      ]),
-      el('span', { class: 'gdm-legend__item' }, [
-        el('span', { class: 'gdm-legend__dot is-muted' }), 'Muted gold — ', el('strong', { text: 'weaker / softer' })
-      ]),
-      el('span', { class: 'gdm-legend__item' }, [
-        el('span', { class: 'gdm-legend__dot is-weak' }), 'Soft red ring — ', el('strong', { text: 'negative or weak' })
-      ])
+      el('div', { class: 'gdm-maplegend__note',
+        text: 'Bubble size = RPK market share · glow = momentum · red ring = weak' })
     ]);
+    mapWrap.appendChild(legendBox);
 
-    var mapCard = el('div', { class: 'card gdm-map-card' }, [mapbar, mapWrap, legend]);
+    var mapCard = el('div', { class: 'card gdm-map-card' }, [mapbar, mapWrap]);
 
     /* ================= tab header ================= */
     var header = el('div', { class: 'gdm-head' }, [
@@ -180,7 +182,7 @@
 
     /* ================= lower split: trend + snapshot heatmap ================= */
     var trendCanvas = el('canvas');
-    var trendTitle = el('span', { text: 'Regional trend' });
+    var trendTitle = el('span', { text: 'Regional Trend' });
     var trendCard = el('div', { class: 'card chart-card gdm-trend' }, [
       el('div', {}, [
         el('div', { class: 'card-title' }, [el('span', { class: 'ico', html: I.trend }), trendTitle]),
@@ -190,9 +192,10 @@
     ]);
 
     var snapTable = el('table', { class: 'hm' });
+    var snapTitle = el('span', { text: 'Regional Snapshot' });
     var snapCard = el('div', { class: 'card' }, [
       el('div', { class: 'section-head' }, [
-        el('div', { class: 'section-head__title' }, [el('span', { class: 'ico', html: I.grid }), 'Regional Snapshot'])
+        el('div', { class: 'section-head__title' }, [el('span', { class: 'ico', html: I.grid }), snapTitle])
       ]),
       el('div', { class: 'hm-wrap' }, [snapTable])
     ]);
@@ -214,9 +217,15 @@
     function staticMarkup() {
       var defs = '<defs>' +
         '<radialGradient id="gdmBg" cx="50%" cy="4%" r="118%">' +
-          '<stop offset="0%" stop-color="#16294b"/>' +
-          '<stop offset="52%" stop-color="#0c1d3a"/>' +
-          '<stop offset="100%" stop-color="#070f22"/>' +
+          '<stop offset="0%" stop-color="#0f1f3c"/>' +
+          '<stop offset="52%" stop-color="#0a1529"/>' +
+          '<stop offset="100%" stop-color="#04080f"/>' +
+        '</radialGradient>' +
+        '<radialGradient id="gdmCore">' +
+          '<stop offset="0%" stop-color="#fff8e7"/>' +
+          '<stop offset="34%" stop-color="#f6d993"/>' +
+          '<stop offset="72%" stop-color="#cfa75e"/>' +
+          '<stop offset="100%" stop-color="#7e6532"/>' +
         '</radialGradient>' +
         '<filter id="gdmGlow" x="-90%" y="-90%" width="280%" height="280%">' +
           '<feGaussianBlur stdDeviation="6"/>' +
@@ -242,37 +251,48 @@
     }
 
     /* ================= bubbles ================= */
+    function bubbleVal(v) {
+      if (v == null) return '—';
+      return (state.metric === 'rpk' || state.metric === 'ask') ? U.fmtPct(v) : U.fmtPctPlain(v);
+    }
     function renderBubbles() {
       while (bubbleG.firstChild) bubbleG.removeChild(bubbleG.firstChild);
       // draw biggest first so smaller bubbles & their labels sit on top
       REGIONS.slice().sort(function (a, b) { return S[b].share - S[a].share; }).forEach(function (r) {
         var p = project(ANCHORS[r].lon, ANCHORS[r].lat);
         var v = windowValue(r), st = strengthOf(v), weak = isWeak(v);
-        var coreR = baseRadius(S[r].share) * (0.85 + 0.32 * st);
-        var haloR = coreR * (1.65 + 0.7 * st);
-        var coreCol = mix(GOLD_DIM, GOLD_BRIGHT, st);
+        var R = baseRadius(S[r].share) * (0.78 + 0.3 * st);   // outer-ring radius
+        var glowR = R * 1.95, coreR = R * 0.46;
         var haloCol = mix(GOLD_DIM, GOLD_HALO, st);
 
         var g = svg('g', { class: 'gdm-bubble' + (state.region === r ? ' is-selected' : ''),
           transform: 'translate(' + r1(p.x) + ',' + r1(p.y) + ')',
           tabindex: '0', role: 'button', 'aria-label': r });
 
-        g.appendChild(svg('circle', { r: r1(haloR), fill: haloCol,
-          opacity: r1(0.16 + 0.42 * st), filter: 'url(#gdmGlow)' }));
+        // soft gold halo, then two thin radar rings, then a hot gradient core
+        g.appendChild(svg('circle', { r: r1(glowR), fill: haloCol,
+          opacity: r1(0.13 + 0.4 * st), filter: 'url(#gdmGlow)' }));
         if (state.region === r) {
-          g.appendChild(svg('circle', { class: 'gdm-bubble__sel', r: r1(coreR + 5),
-            fill: 'none', stroke: 'rgba(247,229,172,.9)', 'stroke-width': '1.4' }));
+          g.appendChild(svg('circle', { class: 'gdm-bubble__sel', r: r1(R + 6),
+            fill: 'none', stroke: 'rgba(247,229,172,.9)', 'stroke-width': '1.3' }));
         }
-        g.appendChild(svg('circle', { class: 'gdm-bubble__core', r: r1(coreR), fill: coreCol,
-          'fill-opacity': '0.9',
-          stroke: weak ? 'rgba(196,88,79,.8)' : 'rgba(246,224,164,.55)',
-          'stroke-width': weak ? '1.8' : '1' }));
-        g.appendChild(svg('circle', { cx: r1(-coreR * 0.28), cy: r1(-coreR * 0.3),
-          r: r1(coreR * 0.4), fill: 'rgba(255,250,236,.32)' }));
-        var lbl = svg('text', { class: 'gdm-bubble__lbl', x: '0', y: r1(coreR + 13), 'text-anchor': 'middle' });
-        lbl.textContent = SHORT[r];
-        g.appendChild(lbl);
-        g.appendChild(svg('circle', { class: 'gdm-hit', r: r1(Math.max(coreR + 9, 18)), fill: 'transparent' }));
+        g.appendChild(svg('circle', { r: r1(R), fill: 'none',
+          stroke: weak ? 'rgba(196,88,79,.75)' : 'rgba(232,200,126,' + r1(0.22 + 0.3 * st) + ')',
+          'stroke-width': weak ? '1.6' : '1' }));
+        g.appendChild(svg('circle', { r: r1(R * 0.68), fill: 'none',
+          stroke: 'rgba(238,210,142,' + r1(0.3 + 0.4 * st) + ')', 'stroke-width': '1' }));
+        g.appendChild(svg('circle', { class: 'gdm-bubble__core', r: r1(coreR),
+          fill: 'url(#gdmCore)', opacity: r1(0.72 + 0.28 * st) }));
+
+        // side label: region name (gold caps) + the selected value beneath
+        var lx = r1(R + 14);
+        var name = svg('text', { class: 'gdm-bubble__name', x: lx, y: '-3', 'text-anchor': 'start' });
+        name.textContent = SHORT[r].toUpperCase();
+        g.appendChild(name);
+        var val = svg('text', { class: 'gdm-bubble__val', x: lx, y: '12', 'text-anchor': 'start' });
+        val.textContent = bubbleVal(v);
+        g.appendChild(val);
+        g.appendChild(svg('circle', { class: 'gdm-hit', r: r1(Math.max(R + 10, 20)), fill: 'transparent' }));
 
         g.addEventListener('mouseenter', function (e) { showTip(r); onMove(e); });
         g.addEventListener('mousemove', onMove);
@@ -285,6 +305,10 @@
         });
         bubbleG.appendChild(g);
       });
+      // re-trigger the soft fade-in so filter changes feel smooth
+      bubbleG.style.animation = 'none';
+      void bubbleG.getBoundingClientRect();
+      bubbleG.style.animation = '';
     }
 
     /* ================= tooltip ================= */
@@ -374,6 +398,7 @@
     }
     function updateSnap() {
       var d = S[state.region];
+      snapTitle.textContent = 'Regional Snapshot — ' + state.region;
       snapTable.innerHTML = '';
       snapTable.appendChild(el('thead', {}, [el('tr', { class: 'grp' }, [
         el('th', { class: 'spacer rowlab', text: 'Metric' }),
@@ -425,7 +450,7 @@
       });
       var card = el('div', { class: 'card' }, [
         el('div', { class: 'section-head' }, [
-          el('div', { class: 'section-head__title' }, [el('span', { class: 'ico', html: I.bars }), 'Regional Comparison'])
+          el('div', { class: 'section-head__title' }, [el('span', { class: 'ico', html: I.bars }), 'Regional Comparison — Latest Metrics'])
         ]),
         el('div', { class: 'hm-scroll' }, [
           el('table', { class: 'hm' }, [el('thead', {}, [grp, sub]), tbody])
@@ -476,6 +501,7 @@
         : state.period === 'year' ? ('Full year ' + fullYear)
         : VIEW_LABEL[state.view];
       caption.textContent = METRIC_LABEL[state.metric] + ' · ' + viewTxt;
+      legendTitle.textContent = METRIC_LABEL[state.metric] + ' · ' + viewTxt + ' (share of global)';
     }
 
     /* ================= trend chart ================= */
@@ -488,9 +514,9 @@
         data: {
           labels: monthLabels,
           datasets: [
-            line('RPK YoY %', d.rpk.series, CH.INK.navy, 'y'),
-            line('ASK YoY %', d.ask.series, CH.INK.blue, 'y'),
-            line('PLF %', d.plf.series, '#c9a85c', 'y1')
+            line('RPK YoY %', d.rpk.series, '#d9b36a', 'y'),            // gold
+            line('ASK YoY %', d.ask.series, '#7ba7da', 'y'),            // soft blue
+            line('PLF %', d.plf.series, 'rgba(234,240,250,.85)', 'y1')  // muted light
           ]
         },
         options: {
@@ -499,7 +525,7 @@
           interaction: { mode: 'index', intersect: false },
           plugins: {
             legend: { display: true, position: 'bottom',
-              labels: { boxWidth: 11, boxHeight: 11, padding: 15, color: '#67718a',
+              labels: { boxWidth: 11, boxHeight: 11, padding: 15, color: '#9fadc9',
                 font: { size: 11, weight: '600' }, usePointStyle: true, pointStyle: 'line' } },
             tooltip: {
               backgroundColor: '#0d2147', titleColor: '#fff', bodyColor: '#dbe4f3',
@@ -514,15 +540,15 @@
             }
           },
           scales: {
-            x: { grid: { display: false, drawTicks: false }, border: { color: CH.INK.grid },
-                 ticks: { color: CH.INK.tick, maxRotation: 0, autoSkip: true, maxTicksLimit: 8, font: { size: 10 } } },
-            y: { position: 'left', grid: { color: CH.INK.grid, drawTicks: false }, border: { display: false },
-                 ticks: { color: CH.INK.tick, font: { size: 10 }, padding: 6, maxTicksLimit: 6, callback: pctY },
-                 title: { display: true, text: 'YoY %', color: CH.INK.axis, font: { size: 10, weight: '600' } },
+            x: { grid: { display: false, drawTicks: false }, border: { color: 'rgba(141,163,205,.25)' },
+                 ticks: { color: '#8093b4', maxRotation: 0, autoSkip: true, maxTicksLimit: 8, font: { size: 10 } } },
+            y: { position: 'left', grid: { color: 'rgba(141,163,205,.13)', drawTicks: false }, border: { display: false },
+                 ticks: { color: '#8093b4', font: { size: 10 }, padding: 6, maxTicksLimit: 6, callback: pctY },
+                 title: { display: true, text: 'YoY %', color: '#8fa1c0', font: { size: 10, weight: '600' } },
                  suggestedMin: -20, suggestedMax: 14 },
             y1: { position: 'right', grid: { display: false }, border: { display: false },
-                  ticks: { color: '#a98f52', font: { size: 10 }, padding: 6, maxTicksLimit: 6, callback: pctY },
-                  title: { display: true, text: 'PLF %', color: '#a98f52', font: { size: 10, weight: '600' } },
+                  ticks: { color: '#cdb377', font: { size: 10 }, padding: 6, maxTicksLimit: 6, callback: pctY },
+                  title: { display: true, text: 'PLF %', color: '#cdb377', font: { size: 10, weight: '600' } },
                   suggestedMin: 60, suggestedMax: 95 }
           }
         }
@@ -534,7 +560,7 @@
         tension: 0.3, spanGaps: true };
     }
     function updateTrend() {
-      trendTitle.textContent = 'Regional trend — ' + state.region;
+      trendTitle.textContent = 'Regional Trend — ' + state.region;
       if (!trendChart) return;
       var d = S[state.region];
       trendChart.data.datasets[0].data = d.rpk.series;

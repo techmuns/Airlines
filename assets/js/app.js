@@ -49,6 +49,8 @@
             tabs[k].btn.classList.toggle('is-active', on);
             tabs[k].panel.hidden = !on;
           });
+          // the Global Demand Map tab uses the premium dark page theme
+          document.body.classList.toggle('gdm-dark', key === 'map');
           requestAnimationFrame(function () { tabs[key].ctl.initCharts(); });
         }
 
