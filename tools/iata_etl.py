@@ -1,0 +1,335 @@
+#!/usr/bin/env python3
+"""IATA Air Passenger Market — ETL for the Airline Demand Monitor.
+
+Turns IATA's monthly "Air Passenger Market Analysis" PDF into the dashboard's
+data/data.json. One PDF = one month of real, regional figures (RPK / ASK / PLF
+year-on-year, plus PLF level and market share) for the six IATA regions, the
+industry total, and the domestic / international split.
+
+Modes
+-----
+  --pdf  PATH        parse a local PDF (e.g. an uploaded report) and update
+  --pdf-url URL      download a PDF from a URL and update
+  --fetch            try to discover & download the latest report from IATA
+  --dry-run          parse and print, but do not write data/data.json
+
+The parser reads the "Air passenger market in detail" table, which is stable
+across IATA's monthly reports. Facts/figures (not the PDF itself) are stored.
+
+Designed to run unattended in CI (see .github/workflows/update-iata-data.yml):
+fetch -> parse -> update data/data.json -> commit -> Cloudflare redeploys.
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime as _dt
+import json
+import os
+import re
+import sys
+import tempfile
+import urllib.request
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_PATH = os.path.join(ROOT, "data", "data.json")
+
+# IATA report region label  ->  dashboard region key
+NAME_MAP = {
+    "TOTAL MARKET": "Industry",
+    "Africa": "Africa",
+    "Asia Pacific": "Asia/Pacific",
+    "Europe": "Europe",
+    "Latin America and Caribbean": "Latin America",
+    "Middle East": "Middle East",
+    "North America": "North America",
+}
+MONTHNUM = {m: i + 1 for i, m in enumerate(
+    ["January", "February", "March", "April", "May", "June",
+     "July", "August", "September", "October", "November", "December"])}
+
+_BROWSER_HEADERS = {
+    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+    "Accept": "text/html,application/xhtml+xml,application/pdf,*/*",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
+NUM = r"(-?\d+(?:\.\d+)?)"
+
+
+# ---------------------------------------------------------------------------
+# PDF text extraction
+# ---------------------------------------------------------------------------
+def extract_text(pdf_path: str) -> str:
+    from pdfminer.high_level import extract_text as _ext
+    return _ext(pdf_path)
+
+
+# ---------------------------------------------------------------------------
+# Parse the "Air passenger market in detail" table
+# ---------------------------------------------------------------------------
+def _row(text: str, label: str):
+    """Find `label` followed by 5 numbers: share, RPK, ASK, PLF(pp), PLF(level)."""
+    pat = re.escape(label) + r"\s+" + r"\s+".join([NUM] * 5)
+    m = re.search(pat, text)
+    return [float(x) for x in m.groups()] if m else None
+
+
+def parse_detail(text: str) -> dict:
+    # Use the most complete table (the full regional one near the end).
+    idx = text.rfind("Air passenger market in detail")
+    if idx == -1:
+        raise ValueError("Could not find the 'Air passenger market in detail' table.")
+    block = text[idx:]
+
+    mm = re.search(r"Air passenger market in detail\s*-\s*([A-Za-z]+)\s+(\d{4})", block)
+    if not mm or mm.group(1) not in MONTHNUM:
+        raise ValueError("Could not read the report month from the table header.")
+    month = "%04d-%02d" % (int(mm.group(2)), MONTHNUM[mm.group(1)])
+
+    t0 = block.find("TOTAL MARKET")
+    t_intl = block.find("International", t0)
+    if t0 == -1 or t_intl == -1:
+        raise ValueError("Table layout not recognised (TOTAL MARKET / International).")
+    world = block[t0:t_intl]                      # total + 6 regions (YoY columns)
+
+    industry, regions = None, {}
+    for label, key in NAME_MAP.items():
+        row = _row(world, label)
+        if row is None:
+            continue
+        share, rpk, ask, plf_pp, plf = row
+        rec = {"share": share, "rpk": rpk, "ask": ask, "plf": plf, "plf_pp": plf_pp}
+        if key == "Industry":
+            industry = rec
+        else:
+            regions[key] = rec
+
+    if industry is None or len(regions) != 6:
+        raise ValueError("Parsed %d/6 regions + industry=%s — table format may have changed."
+                         % (len(regions), industry is not None))
+
+    intl = _row(block[t_intl:], "International")
+    dom_idx = block.find("Domestic", t_intl)
+    dom = _row(block[dom_idx:], "Domestic") if dom_idx != -1 else None
+
+    return {
+        "month": month,
+        "industry": industry,
+        "regions": regions,
+        "international_rpk": intl[1] if intl else None,
+        "domestic_rpk": dom[1] if dom else None,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Merge a parsed month into data/data.json
+# ---------------------------------------------------------------------------
+def _next_month(mk: str) -> str:
+    y, m = int(mk[:4]), int(mk[5:7])
+    m += 1
+    if m > 12:
+        m, y = 1, y + 1
+    return "%04d-%02d" % (y, m)
+
+
+def _months_between(after: str, upto: str):
+    out, cur = [], _next_month(after)
+    while True:
+        out.append(cur)
+        if cur == upto or len(out) > 600:
+            break
+        cur = _next_month(cur)
+    return out
+
+
+def _payload_blob(data: dict) -> str:
+    """Stable snapshot of the meaningful data (ignores _meta timestamp)."""
+    return json.dumps({k: data[k] for k in ("months", "series", "global", "market_share")},
+                      sort_keys=True)
+
+
+def update_data(rec: dict, path: str = DATA_PATH):
+    """Merge a parsed month; write only if the data actually changed.
+
+    Returns (data, changed: bool) so callers / CI can skip empty commits.
+    """
+    with open(path) as f:
+        data = json.load(f)
+    before = _payload_blob(data)
+
+    months = data["months"]
+    series = data["series"]
+    target = rec["month"]
+
+    if target not in months:
+        if target < months[0]:
+            raise ValueError("Month %s predates the dataset start %s." % (target, months[0]))
+        for mk in _months_between(months[-1], target):
+            months.append(mk)
+            for r in data["regions"]:
+                series["rpk_yoy"][r].append(None)
+                series["ask_yoy"][r].append(None)
+                series["plf"][r].append(None)
+            data["global"]["domestic_rpk_yoy"].append(None)
+            data["global"]["international_rpk_yoy"].append(None)
+
+    i = months.index(target)
+
+    def put(metric, key, value):
+        series[metric][key][i] = value
+
+    for key, v in rec["regions"].items():
+        put("rpk_yoy", key, v["rpk"])
+        put("ask_yoy", key, v["ask"])
+        put("plf", key, v["plf"])
+    ind = rec["industry"]
+    put("rpk_yoy", "Industry", ind["rpk"])
+    put("ask_yoy", "Industry", ind["ask"])
+    put("plf", "Industry", ind["plf"])
+
+    data["global"]["domestic_rpk_yoy"][i] = rec["domestic_rpk"]
+    data["global"]["international_rpk_yoy"][i] = rec["international_rpk"]
+
+    # latest known market shares (IATA: % of industry RPK in prior year)
+    data["market_share"] = {"Industry": 100.0}
+    for key, v in rec["regions"].items():
+        data["market_share"][key] = v["share"]
+
+    meta = data["_meta"]
+    real = set(meta.get("real_months", []))
+    real.add(target)
+    meta["real_months"] = sorted(real)
+    meta["source"] = ("IATA Air Passenger Market Analysis (real figures for months listed in "
+                      "real_months; remaining months are synthetic sample data).")
+
+    changed = _payload_blob(data) != before
+    if changed:
+        meta["latest_month"] = months[-1]
+        meta["generated"] = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        with open(path, "w") as f:
+            json.dump(data, f, indent=2)
+    return data, changed
+
+
+# ---------------------------------------------------------------------------
+# Fetch the latest report from IATA (best-effort; runs from CI, not the sandbox)
+# ---------------------------------------------------------------------------
+def _get(url: str, timeout: int = 40) -> bytes:
+    req = urllib.request.Request(url, headers=_BROWSER_HEADERS)
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read()
+
+
+def _download_pdf(url: str) -> str:
+    print("  downloading PDF:", url)
+    data = _get(url)
+    if not data[:4] == b"%PDF":
+        raise ValueError("URL did not return a PDF (got %d bytes, header %r)." % (len(data), data[:8]))
+    fd, tmp = tempfile.mkstemp(suffix=".pdf")
+    with os.fdopen(fd, "wb") as f:
+        f.write(data)
+    return tmp
+
+
+def discover_latest_pdf() -> str:
+    """Locate the newest 'Air Passenger Market Analysis' PDF on iata.org.
+
+    Strategy: try the predictable economic-report repository page for recent
+    months, scrape it for a .pdf link, and download. Falls back to scanning the
+    economics library index. Logs each attempt so CI output is diagnosable.
+    """
+    today = _dt.date.today()
+    months_back = [today.replace(day=1) - _dt.timedelta(days=1) * 0]
+    # last 4 months (reports lag ~1 month)
+    d = today.replace(day=15)
+    cands = []
+    for _ in range(5):
+        cands.append(d)
+        d = (d.replace(day=1) - _dt.timedelta(days=1)).replace(day=15)
+    month_names = [c.strftime("%B").lower() + "-" + c.strftime("%Y") for c in cands]
+
+    base = "https://www.iata.org/en/iata-repository/publications/economic-reports/"
+    pages = ["air-passenger-market-analysis---%s/" % mn for mn in month_names]
+    pages.append("../economics-library/")
+    pages.insert(0, "")  # the economics library index
+
+    index_urls = [
+        "https://www.iata.org/en/publications/economics/economics-library/",
+    ] + [base + p for p in pages if p]
+
+    pdf_re = re.compile(r'href="([^"]+\.pdf[^"]*)"', re.I)
+    seen = []
+    for url in index_urls:
+        try:
+            print("  scanning:", url)
+            html = _get(url).decode("utf-8", "replace")
+        except Exception as e:  # noqa: BLE001
+            print("    ! unreachable:", str(e).split("\n")[0])
+            continue
+        for href in pdf_re.findall(html):
+            if "passenger" in href.lower() or "air-passenger" in href.lower():
+                full = href if href.startswith("http") else urllib.request.urljoin(url, href)
+                seen.append(full)
+        if seen:
+            break
+
+    if not seen:
+        raise RuntimeError("No Air Passenger PDF link found on IATA (site layout/access may have changed).")
+    print("  candidate PDFs:", *seen, sep="\n    ")
+    return _download_pdf(seen[0])
+
+
+# ---------------------------------------------------------------------------
+def run(pdf_path: str, dry_run: bool) -> int:
+    text = extract_text(pdf_path)
+    rec = parse_detail(text)
+    print("Parsed %s — industry RPK %.1f%% ASK %.1f%% PLF %.1f%%"
+          % (rec["month"], rec["industry"]["rpk"], rec["industry"]["ask"], rec["industry"]["plf"]))
+    for k in ["North America", "Europe", "Asia/Pacific", "Middle East", "Latin America", "Africa"]:
+        v = rec["regions"][k]
+        print("  %-14s share %4.1f%%  RPK %+6.1f  ASK %+6.1f  PLF %5.1f" %
+              (k, v["share"], v["rpk"], v["ask"], v["plf"]))
+    print("  Domestic RPK %s  International RPK %s" % (rec["domestic_rpk"], rec["international_rpk"]))
+    if dry_run:
+        print("(dry run — data/data.json not modified)")
+        return 0
+    data, changed = update_data(rec, DATA_PATH)
+    if changed:
+        print("Updated data/data.json — %d months, latest %s, real months: %s"
+              % (len(data["months"]), data["_meta"]["latest_month"],
+                 ", ".join(data["_meta"]["real_months"])))
+    else:
+        print("No change — %s already present with identical figures." % rec["month"])
+    return 0
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description="IATA Air Passenger ETL")
+    g = ap.add_mutually_exclusive_group(required=True)
+    g.add_argument("--pdf", help="path to a local IATA report PDF")
+    g.add_argument("--pdf-url", help="URL of an IATA report PDF")
+    g.add_argument("--fetch", action="store_true", help="discover & download the latest report from IATA")
+    ap.add_argument("--dry-run", action="store_true", help="parse and print only; do not write")
+    args = ap.parse_args(argv)
+
+    tmp = None
+    try:
+        if args.pdf:
+            pdf = args.pdf
+        elif args.pdf_url:
+            pdf = tmp = _download_pdf(args.pdf_url)
+        else:
+            pdf = tmp = discover_latest_pdf()
+        return run(pdf, args.dry_run)
+    except Exception as e:  # noqa: BLE001
+        print("ERROR:", e, file=sys.stderr)
+        return 1
+    finally:
+        if tmp and os.path.exists(tmp):
+            os.remove(tmp)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
