@@ -2,13 +2,13 @@ name: Update IATA data
 
 # Keeps data/data.json up to date with IATA's monthly "Air Passenger Market
 # Analysis". Runs on a schedule (IATA publishes ~4 weeks after month-end) and
-# can also be run on demand. When data/data.json changes it commits to the
-# branch, which Cloudflare Pages then redeploys automatically.
+# can also be run on demand. When data/data.json changes it commits, which
+# Cloudflare Pages then redeploys automatically.
 
 on:
   schedule:
-    # 06:00 UTC on the 5th, 12th, 19th and 26th — catches the report whenever
-    # IATA publishes it that month. Re-runs are idempotent (no-op if unchanged).
+    # 06:00 UTC on the 5th, 12th, 19th, 26th — catches the report whenever IATA
+    # publishes it that month. Re-runs are idempotent (no-op if unchanged).
     - cron: "0 6 5,12,19,26 * *"
   workflow_dispatch:
     inputs:
@@ -16,6 +16,10 @@ on:
         description: "Optional: direct URL to an IATA Air Passenger PDF (skips auto-discovery)"
         required: false
         default: ""
+      mode:
+        description: "run = fetch & update (default); diagnose = just list links IATA exposes"
+        required: false
+        default: "run"
 
 permissions:
   contents: write
@@ -36,22 +40,39 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Install dependencies
-        run: pip install --quiet "pdfminer.six>=20221105"
+        run: |
+          pip install --quiet "pdfminer.six>=20221105"
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: Diagnose (list IATA links) and stop
+        if: ${{ github.event.inputs.mode == 'diagnose' }}
+        run: node tools/fetch_iata_pdf.js --diagnose
 
       - name: Fetch & update IATA data
+        if: ${{ github.event.inputs.mode != 'diagnose' }}
         run: |
           set -o pipefail
           if [ -n "${{ github.event.inputs.pdf_url }}" ]; then
-            echo "Using provided PDF URL."
+            echo "Using the PDF URL provided."
             python tools/iata_etl.py --pdf-url "${{ github.event.inputs.pdf_url }}"
           else
-            echo "Auto-discovering the latest IATA report..."
-            # A missed/blocked fetch must not fail the scheduled run.
-            python tools/iata_etl.py --fetch || echo "::warning::IATA auto-fetch produced no update (site unreachable, blocked, or no new report)."
+            echo "Auto-discovering the latest IATA report with headless Chromium..."
+            if node tools/fetch_iata_pdf.js --out /tmp/iata.pdf; then
+              python tools/iata_etl.py --pdf /tmp/iata.pdf
+            else
+              echo "::warning::IATA auto-fetch found no downloadable report (site layout/access may have changed)."
+            fi
           fi
 
       - name: Commit if data changed
+        if: ${{ github.event.inputs.mode != 'diagnose' }}
         run: |
           if git diff --quiet -- data/data.json; then
             echo "data/data.json unchanged — nothing to commit."
