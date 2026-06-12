@@ -534,7 +534,7 @@
             y: { position: 'left', grid: { color: 'rgba(141,163,205,.13)', drawTicks: false }, border: { display: false },
                  ticks: { color: '#8093b4', font: { size: 10 }, padding: 6, maxTicksLimit: 6, callback: pctY },
                  title: { display: true, text: 'YoY %', color: '#8fa1c0', font: { size: 10, weight: '600' } },
-                 suggestedMin: -20, suggestedMax: 14 },
+                 suggestedMin: -6, suggestedMax: 16 },
             y1: { position: 'right', grid: { display: false }, border: { display: false },
                   ticks: { color: '#cdb377', font: { size: 10 }, padding: 6, maxTicksLimit: 6, callback: pctY },
                   title: { display: true, text: 'PLF %', color: '#cdb377', font: { size: 10, weight: '600' } },
