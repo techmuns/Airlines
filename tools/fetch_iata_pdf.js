@@ -53,15 +53,16 @@ async function dismissBanners(page) {
     href: a.href || '',
   })));
   const re = /air[\s-]?passenger/i;
-  // The monthly report URL looks like .../air-passenger-market-analysis-<month>-<year>/
-  const monthly = /air-passenger-market-analysis-[a-z]+-\d{4}/i;
   const cands = links.filter(l => re.test(l.text) || re.test(l.href));
-  // de-dup by href, then rank the actual monthly report ahead of other
-  // "air passenger" articles (e.g. Chart of the Week).
+  // de-dup, then rank: the monthly report in the iata-repository (whose URL
+  // streams the PDF directly) first, then other monthly links, then the rest.
+  const score = (h) =>
+    (/air-passenger-market-analysis-[a-z]+-\d{4}/i.test(h) ? 2 : 0) +
+    (/iata-repository\/publications\/economic-reports/i.test(h) ? 1 : 0);
   const seen = new Set();
   const uniq = cands
     .filter(l => l.href && !seen.has(l.href) && seen.add(l.href))
-    .sort((a, b) => (monthly.test(b.href) ? 1 : 0) - (monthly.test(a.href) ? 1 : 0));
+    .sort((a, b) => score(b.href) - score(a.href));
 
   console.log(`found ${uniq.length} candidate Air Passenger link(s):`);
   uniq.slice(0, 25).forEach(l => console.log('  -', JSON.stringify(l)));
@@ -69,38 +70,40 @@ async function dismissBanners(page) {
   if (diagnose) { await browser.close(); return; }
   if (!uniq.length) { console.error('No Air Passenger links visible on the library page.'); process.exit(2); }
 
-  // Try each candidate (newest first) until we land a PDF.
+  // GET a URL and return its bytes if they are a PDF (follows redirects).
+  async function fetchPdf(url) {
+    try {
+      const resp = await ctx.request.get(url, { timeout: 60000 });
+      const buf = await resp.body();
+      if (buf.slice(0, 4).toString('latin1') === '%PDF') return buf;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
   for (const l of uniq) {
     try {
-      let pdfUrl = null;
-      if (/\.pdf(\?|$)/i.test(l.href)) {
-        pdfUrl = l.href;
-      } else {
-        console.log('opening report page:', l.href);
-        await page.goto(l.href, { waitUntil: 'domcontentloaded', timeout: 60000 });
-        await dismissBanners(page);
-        await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
-        await page.waitForTimeout(1500);
-        // IATA serves PDFs from /globalassets/... or a *.pdf link / download button
-        const hrefs = await page.$$eval('a', as => as.map(a => a.href || '').filter(Boolean));
-        const pdfs = hrefs.filter(h => /\.pdf(\?|$)/i.test(h) || /globalassets|getmedia|\/download/i.test(h));
-        console.log('  PDF-like links on page:', pdfs.slice(0, 8).join(' | ') || '(none)');
-        pdfUrl = pdfs.find(h => /passenger/i.test(h) && /\.pdf/i.test(h))
-              || pdfs.find(h => /\.pdf/i.test(h))
-              || pdfs[0] || null;
-      }
-      if (!pdfUrl) { console.log('  no PDF link on that page'); continue; }
+      // (1) Many IATA report URLs stream the PDF directly.
+      let buf = await fetchPdf(l.href);
+      if (buf) { fs.writeFileSync(out, buf); console.log('PDF_SAVED', out, '(direct)'); await browser.close(); return; }
 
-      console.log('downloading PDF:', pdfUrl);
-      const resp = await ctx.request.get(pdfUrl, { timeout: 60000 });
-      const buf = await resp.body();
-      if (buf.slice(0, 4).toString('latin1') !== '%PDF') {
-        console.log('  not a PDF (status ' + resp.status() + ')'); continue;
+      // (2) Otherwise it is an HTML page — render it and look for a PDF link.
+      console.log('opening report page:', l.href);
+      const dl = page.waitForEvent('download', { timeout: 6000 }).catch(() => null);
+      await page.goto(l.href, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {});
+      const d = await dl;                 // the page may itself trigger a download
+      if (d) {
+        const p = await d.path().catch(() => null);
+        if (p) { fs.copyFileSync(p, out); console.log('PDF_SAVED', out, '(navigation download)'); await browser.close(); return; }
       }
-      fs.writeFileSync(out, buf);
-      console.log('PDF_SAVED', out);
-      await browser.close();
-      return;
+      await dismissBanners(page);
+      await page.waitForTimeout(1200);
+      const hrefs = await page.$$eval('a', as => as.map(a => a.href || '').filter(Boolean));
+      const pdfs = hrefs.filter(h => /\.pdf(\?|$)/i.test(h) || /globalassets|getmedia/i.test(h));
+      console.log('  PDF-like links on page:', pdfs.slice(0, 6).join(' | ') || '(none)');
+      for (const h of pdfs) {
+        buf = await fetchPdf(h);
+        if (buf) { fs.writeFileSync(out, buf); console.log('PDF_SAVED', out); await browser.close(); return; }
+      }
     } catch (e) {
       console.log('  attempt failed:', String(e.message || e).split('\n')[0]);
     }
