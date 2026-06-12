@@ -33,12 +33,12 @@ WIDTH = 1000.0     # 360 deg of longitude -> WIDTH px
 K = WIDTH / 360.0  # px per degree of longitude
 # Latitude is gently compressed (stylised flat-map look) so the hero map is
 # short and wide — a presentation choice only; the data stays regional.
-YSQUASH = 0.62
+YSQUASH = 0.72
 KY = K * YSQUASH
 HEIGHT = round((LAT_TOP - LAT_BOT) * KY)
 
 # ---- dot grid ----
-STEP = 9.0         # spacing between dots in projected px
+STEP = 7.0         # spacing between dots in projected px (fine halftone)
 STAGGER = True     # offset alternate rows for a softer halftone pattern
 
 
@@ -122,14 +122,15 @@ def main():
         y += STEP
         row += 1
 
-    # Simplified land silhouette path (a faint fill under the dots for depth).
-    # Decimate points and drop tiny islands so the path stays light.
-    MIN_SEG = 4.0       # drop points closer than this to the last kept point
-    MIN_SPAN = 11.0     # drop rings smaller than this (projected px, max dimension)
+    # Crisp land silhouette path (filled landmass + stroked coastline). Keep
+    # high fidelity for clean edges; only the tiniest specks are dropped, and
+    # coordinates carry one decimal for sub-pixel-smooth coastlines.
+    MIN_SEG = 1.5       # drop points closer than this to the last kept point
+    MIN_SPAN = 5.0      # drop rings smaller than this (projected px, max dimension)
     parts = []
     for rings in polygons(gj):
         for ring in rings:
-            if len(ring) < 8:
+            if len(ring) < 6:
                 continue
             proj = [project(lon, lat) for lon, lat in ring]
             xs = [p[0] for p in proj]
@@ -140,11 +141,11 @@ def main():
             lastkept = None
             for x, y in proj:
                 if lastkept is None or (abs(x - lastkept[0]) + abs(y - lastkept[1])) >= MIN_SEG:
-                    pts.append((round(x), round(y)))
+                    pts.append((round(x, 1), round(y, 1)))
                     lastkept = (x, y)
-            if len(pts) < 6:
+            if len(pts) < 5:
                 continue
-            seg = "M" + " ".join("%d,%d" % p for p in pts) + "Z"
+            seg = "M" + " ".join("%g,%g" % p for p in pts) + "Z"
             parts.append(seg)
     land_path = "".join(parts)
 

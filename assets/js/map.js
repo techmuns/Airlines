@@ -140,7 +140,7 @@
       if (state.metric === 'share') return false;
       return v < 0;
     }
-    function baseRadius(share) { return Math.max(9.5, 26 * Math.sqrt(share / maxShare)); }
+    function baseRadius(share) { return Math.max(7, 19 * Math.sqrt(share / maxShare)); }
 
     /* ================= map shell ================= */
     var svgEl = svg('svg', {
@@ -154,21 +154,18 @@
     var tipEl = el('div', { class: 'gdm-tooltip', hidden: 'hidden' });
     var mapWrap = el('div', { class: 'gdm-map' }, [svgEl, tipEl]);
 
-    /* floating in-map legend (lower-left, like a chart key) */
-    function legendDot(d, o) {
-      return el('span', { class: 'gdm-maplegend__dot',
-        style: 'width:' + d + 'px;height:' + d + 'px;opacity:' + o });
+    /* floating in-map legend (lower-left) — compact, secondary chart key */
+    function legendRow(symCls, text) {
+      return el('div', { class: 'gdm-maplegend__row' }, [
+        el('span', { class: 'gdm-maplegend__sym ' + symCls }), text
+      ]);
     }
     var legendTitle = el('div', { class: 'gdm-maplegend__title' });
     var legendBox = el('div', { class: 'gdm-maplegend' }, [
       legendTitle,
-      el('div', { class: 'gdm-maplegend__scale' }, [
-        el('span', { class: 'gdm-maplegend__cap', text: 'Lower' }),
-        legendDot(5, 0.4), legendDot(7, 0.6), legendDot(9, 0.8), legendDot(12, 1),
-        el('span', { class: 'gdm-maplegend__cap', text: 'Higher' })
-      ]),
-      el('div', { class: 'gdm-maplegend__note',
-        text: 'Bubble size = RPK market share · glow = momentum · red ring = weak' })
+      legendRow('is-size', 'Size · market share'),
+      legendRow('is-glow', 'Glow · momentum'),
+      legendRow('is-weak', 'Red ring · weak')
     ]);
     mapWrap.appendChild(legendBox);
 
@@ -227,24 +224,24 @@
     /* ================= static SVG (bg, graticule, land, dots, vignette) ================= */
     function staticMarkup() {
       var defs = '<defs>' +
-        '<radialGradient id="gdmBg" cx="50%" cy="0%" r="130%">' +
-          '<stop offset="0%" stop-color="#0e1e3a"/>' +
-          '<stop offset="50%" stop-color="#091427"/>' +
-          '<stop offset="100%" stop-color="#03060d"/>' +
+        '<radialGradient id="gdmBg" cx="50%" cy="-4%" r="138%">' +
+          '<stop offset="0%" stop-color="#0c1c37"/>' +
+          '<stop offset="52%" stop-color="#081123"/>' +
+          '<stop offset="100%" stop-color="#03050b"/>' +
         '</radialGradient>' +
         '<radialGradient id="gdmCore">' +
-          '<stop offset="0%" stop-color="#fff8e7"/>' +
-          '<stop offset="34%" stop-color="#f6d993"/>' +
-          '<stop offset="72%" stop-color="#cfa75e"/>' +
-          '<stop offset="100%" stop-color="#7e6532"/>' +
+          '<stop offset="0%" stop-color="#f6eed8"/>' +
+          '<stop offset="42%" stop-color="#e3cd92"/>' +
+          '<stop offset="80%" stop-color="#bc9a54"/>' +
+          '<stop offset="100%" stop-color="#6b5530"/>' +
         '</radialGradient>' +
-        '<radialGradient id="gdmVin" cx="50%" cy="50%" r="72%">' +
-          '<stop offset="0%" stop-color="#03060d" stop-opacity="0"/>' +
-          '<stop offset="68%" stop-color="#03060d" stop-opacity="0"/>' +
-          '<stop offset="100%" stop-color="#03060d" stop-opacity="0.55"/>' +
+        '<radialGradient id="gdmVin" cx="50%" cy="48%" r="74%">' +
+          '<stop offset="0%" stop-color="#03050b" stop-opacity="0"/>' +
+          '<stop offset="66%" stop-color="#03050b" stop-opacity="0"/>' +
+          '<stop offset="100%" stop-color="#03050b" stop-opacity="0.6"/>' +
         '</radialGradient>' +
-        '<filter id="gdmGlow" x="-90%" y="-90%" width="280%" height="280%">' +
-          '<feGaussianBlur stdDeviation="6"/>' +
+        '<filter id="gdmGlow" x="-70%" y="-70%" width="240%" height="240%">' +
+          '<feGaussianBlur stdDeviation="3.2"/>' +
         '</filter>' +
       '</defs>';
       var bg = '<rect x="0" y="0" width="' + WM.width + '" height="' + WM.height + '" fill="url(#gdmBg)"/>';
@@ -260,11 +257,11 @@
       }
       grat += '</g>';
       var land = '<path class="gdm-land" fill-rule="evenodd" d="' + WM.landPath + '"/>';
-      // halftone land dots; a deterministic ~9% are warm "city light" sparks
+      // fine halftone texture on the landmass; a sparse few are warm hub sparks
       var dots = '<g class="gdm-dots">' + WM.dots.map(function (p, i) {
-        var warm = (i * 7) % 11 === 0;
+        var warm = (i * 5) % 17 === 0;
         return '<circle' + (warm ? ' class="is-warm"' : '') +
-               ' cx="' + p[0] + '" cy="' + p[1] + '" r="' + (warm ? 1.5 : 1.3) + '"/>';
+               ' cx="' + p[0] + '" cy="' + p[1] + '" r="' + (warm ? 1 : 0.8) + '"/>';
       }).join('') + '</g>';
       var vin = '<rect x="0" y="0" width="' + WM.width + '" height="' + WM.height +
                 '" fill="url(#gdmVin)" pointer-events="none"/>';
@@ -282,38 +279,36 @@
       REGIONS.slice().sort(function (a, b) { return S[b].share - S[a].share; }).forEach(function (r) {
         var p = project(ANCHORS[r].lon, ANCHORS[r].lat);
         var v = windowValue(r), st = strengthOf(v), weak = isWeak(v);
-        var R = baseRadius(S[r].share) * (0.8 + 0.28 * st);   // outer-ring radius
-        var glowR = R * 1.95, coreR = R * 0.46;
+        var R = baseRadius(S[r].share) * (0.84 + 0.22 * st);   // metallic-ring radius
+        var glowR = R * 1.3, coreR = R * 0.4;
         var haloCol = mix(GOLD_DIM, GOLD_HALO, st);
 
         var g = svg('g', { class: 'gdm-bubble' + (state.region === r ? ' is-selected' : ''),
           transform: 'translate(' + r1(p.x) + ',' + r1(p.y) + ')',
           tabindex: '0', role: 'button', 'aria-label': r });
 
-        // soft gold halo, then two thin radar rings, then a hot gradient core
+        // controlled halo, a single thin metallic ring, a compact champagne core
         g.appendChild(svg('circle', { r: r1(glowR), fill: haloCol,
-          opacity: r1(0.13 + 0.4 * st), filter: 'url(#gdmGlow)' }));
+          opacity: r1(0.08 + 0.2 * st), filter: 'url(#gdmGlow)' }));
         if (state.region === r) {
-          g.appendChild(svg('circle', { class: 'gdm-bubble__sel', r: r1(R + 5),
-            fill: 'none', stroke: 'rgba(247,229,172,.9)', 'stroke-width': '1.2' }));
+          g.appendChild(svg('circle', { class: 'gdm-bubble__sel', r: r1(R + 3.5),
+            fill: 'none', stroke: 'rgba(236,222,182,.82)', 'stroke-width': '0.8' }));
         }
         g.appendChild(svg('circle', { r: r1(R), fill: 'none',
-          stroke: weak ? 'rgba(196,88,79,.75)' : 'rgba(232,200,126,' + r1(0.22 + 0.3 * st) + ')',
-          'stroke-width': weak ? '1.5' : '1' }));
-        g.appendChild(svg('circle', { r: r1(R * 0.68), fill: 'none',
-          stroke: 'rgba(238,210,142,' + r1(0.3 + 0.4 * st) + ')', 'stroke-width': '1' }));
+          stroke: weak ? 'rgba(190,98,88,.6)' : 'rgba(224,196,132,' + r1(0.38 + 0.34 * st) + ')',
+          'stroke-width': weak ? '1' : '0.9' }));
         g.appendChild(svg('circle', { class: 'gdm-bubble__core', r: r1(coreR),
-          fill: 'url(#gdmCore)', opacity: r1(0.72 + 0.28 * st) }));
+          fill: 'url(#gdmCore)', opacity: r1(0.86 + 0.14 * st) }));
 
-        // side label: region name (gold caps) + the selected value beneath
-        var lx = r1(R + 12);
-        var name = svg('text', { class: 'gdm-bubble__name', x: lx, y: '-3', 'text-anchor': 'start' });
+        // side label: region name (caps) + the selected value beneath
+        var lx = r1(R + 9);
+        var name = svg('text', { class: 'gdm-bubble__name', x: lx, y: '-2.5', 'text-anchor': 'start' });
         name.textContent = SHORT[r].toUpperCase();
         g.appendChild(name);
-        var val = svg('text', { class: 'gdm-bubble__val', x: lx, y: '11', 'text-anchor': 'start' });
+        var val = svg('text', { class: 'gdm-bubble__val', x: lx, y: '8', 'text-anchor': 'start' });
         val.textContent = bubbleVal(v);
         g.appendChild(val);
-        g.appendChild(svg('circle', { class: 'gdm-hit', r: r1(Math.max(R + 9, 17)), fill: 'transparent' }));
+        g.appendChild(svg('circle', { class: 'gdm-hit', r: r1(Math.max(R + 8, 15)), fill: 'transparent' }));
 
         g.addEventListener('mouseenter', function (e) { showTip(r); onMove(e); });
         g.addEventListener('mousemove', onMove);
