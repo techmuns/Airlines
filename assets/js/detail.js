@@ -1,5 +1,5 @@
 /* Airline Demand Monitor — Monthly Detail tab.
-   A simplified mirror of the client's Goldman Sachs / IATA workbook: the same
+   A simplified mirror of IATA's monthly Air Passenger Market detail: the same
    System / International / Domestic views, the same single-month vs 3-month
    rolling basis, the same regions/countries — presented as ONE clean,
    colour-coded month-by-month matrix (instead of a 120-column sheet), with a
@@ -45,7 +45,7 @@
     function exportCSV() {
       var v = views[state.view];
       var head = ['Month', 'Region', 'RPK YoY %', 'ASK YoY %', 'PLF %'];
-      var lines = ['IATA monthly traffic detail (' + state.view + ') — source: Goldman Sachs / IATA',
+      var lines = ['IATA monthly traffic detail (' + state.view + ') — source: IATA, iata.org',
                    head.join(',')];
       v.months.forEach(function (m, i) {
         v.order.forEach(function (g) {
@@ -172,7 +172,7 @@
       ]);
       var meta = el('div', { class: 'gdm-controlbar__meta' }, [
         el('span', { class: 'ico', html: U.ICONS.calendar }),
-        'Goldman Sachs / IATA · monthly'
+        'IATA · iata.org · monthly'
       ]);
       return el('section', { class: 'card gdm-controlbar' }, [
         el('div', { style: 'display:flex;align-items:center;gap:14px;flex-wrap:wrap' }, [meta, dl]),

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Import the Goldman Sachs / IATA 'Monthly Traffic Data Detail (YoY)' workbook
-into a compact JSON the dashboard can read.
+"""Import an IATA 'Monthly Air Traffic Data Detail (YoY)' workbook into a
+compact JSON the dashboard can read. (Source: IATA, iata.org.)
 
 The client's workbook has three views (sheets): System, International, Domestic.
 Each view is a wide month-by-month grid: column GROUPS = Industry + regions
@@ -147,8 +147,8 @@ def main():
     latest = max(v["months"][-1] for v in views.values())
     out = {
         "_meta": {
-            "source": "Goldman Sachs Airlines Research (data: IATA.org). "
-                      "Monthly Air Traffic Detail, YoY.",
+            "source": "IATA Air Passenger Market Analysis — iata.org "
+                      "(monthly regional detail, year-on-year).",
             "generated": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "latest": latest,
             "window_from": START,

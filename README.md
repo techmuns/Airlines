@@ -27,7 +27,7 @@ Three tabs:
 3. **Airline Traffic & Regional** — global airline traffic (IATA): two big
    charts, a regional performance snapshot, a detailed matrix, and insights.
    At the bottom is the **Monthly Detail** section — a simplified version of the
-   client's Goldman Sachs / IATA monthly workbook. Pick a **view** (System,
+   monthly IATA Air Passenger Market detail. Pick a **view** (System,
    International or Domestic), a **measure** (passenger traffic RPK, capacity
    ASK, or load factor PLF) and a **basis** (each month, or a 3-month average),
    and read every month down the page as one clean colour-coded grid
@@ -47,7 +47,7 @@ The dashboard reads these small data files:
 - `data/data.json` — monthly global airline traffic (IATA)
 - `data/iata_detail.json` — the Monthly Detail section (System / International /
   Domestic, by region/country, 2011→now). The long pre-2026 history is seeded
-  once from the client's Goldman Sachs / IATA Excel by `tools/iata_excel_etl.py`;
+  once from an IATA monthly traffic-detail Excel by `tools/iata_excel_etl.py`;
   from then on **all three views** are extended automatically every month by the
   IATA pipeline, which reads the report's System, International and Domestic
   sections — so no spreadsheet is needed to keep it current.
