@@ -196,8 +196,7 @@
         el('span', {}, [el('b', {}, ['Source: ']), data._meta.source]),
         el('span', {}, [el('b', {}, ['Window: ']), data._meta.window_from + ' to ' + data._meta.latest]),
         el('span', {}, [el('b', {}, ['Updates: ']),
-          'All three views refresh automatically each month from the IATA ' +
-          'report; the client workbook only seeds the pre-2026 history.']),
+          'All three views refresh automatically each month from the IATA report.']),
         el('span', {}, ['Russian domestic figures end Feb 2022 (no longer reported).'])
       ]);
     }
