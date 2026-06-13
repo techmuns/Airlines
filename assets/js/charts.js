@@ -6,11 +6,14 @@
   var Chart = global.Chart;
   var FONT = '"Inter", "Segoe UI", system-ui, sans-serif';
 
-  /* dark-theme ink: champagne gold for bars, soft blue for lines, light axes */
+  /* chart ink — IATA/research "deck" blues (navy primary, light-blue secondary)
+     tuned to read on the dark theme; value labels light for legibility */
   var INK = {
-    navy: '#d8b15f',                    // primary BAR series (champagne gold)
-    navySoft: '#a98742',                // muted gold (deep accent)
-    blue: '#6fa8dc',                    // LINE / moving-average series (soft blue)
+    navy: '#5b9bd5',                    // primary BAR series (deck blue)
+    navySoft: '#3f74b0',                // deeper blue accent
+    blue: '#6fa8dc',                    // LINE / moving-average series (medium blue)
+    blueLight: '#a9cfee',               // secondary series, e.g. International (light blue)
+    label: '#cfdaee',                   // value labels above bars (legible on dark)
     grid: 'rgba(180,200,225,.12)',      // subtle gridlines
     axis: '#9fb0c7',
     tick: '#9fb0c7'
@@ -38,7 +41,7 @@
           if (meta.type !== 'bar' || meta.hidden) return;
           ctx.save();
           ctx.font = '700 ' + (opt.size || 9.5) + 'px ' + FONT;
-          ctx.fillStyle = opt.color || INK.navy;
+          ctx.fillStyle = opt.color || INK.label;
           ctx.textAlign = 'center';
           meta.data.forEach(function (bar, i) {
             var v = ds.data[i];

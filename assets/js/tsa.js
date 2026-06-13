@@ -190,7 +190,7 @@
       // Exhibit: TSA Passenger Throughput, YoY % (monthly bars + value labels)
       CH.barChart(c1.canvas, ym.months.map(U.fmtMonthShort), ym.values, {
         color: CH.INK.navy, yMin: -3, yMax: 10, yCallback: pctY, yTitle: 'YoY %', maxBar: 16,
-        barLabels: { display: true, size: 8.5, color: CH.INK.navy, formatter: function (v) { return v.toFixed(1); } },
+        barLabels: { display: true, size: 8.5, color: CH.INK.label, formatter: function (v) { return v.toFixed(1); } },
         tooltip: { label: function (c) { return c.raw.toFixed(1) + '%'; } }
       });
 
@@ -210,7 +210,7 @@
       CH.barChart(c4.canvas, monthly.map(function (m) { return U.fmtMonthShort(m.key); }),
         monthly.map(function (m) { return m.avg; }), {
         color: CH.INK.navy, yMin: 0, yCallback: milY, yTitle: 'Millions', maxBar: 16,
-        barLabels: { display: true, size: 8.5, color: CH.INK.navy, formatter: function (v) { return (v / 1e6).toFixed(1); } },
+        barLabels: { display: true, size: 8.5, color: CH.INK.label, formatter: function (v) { return (v / 1e6).toFixed(1); } },
         tooltip: { label: function (c) { return U.fmtInt(c.raw); } } });
     }
 

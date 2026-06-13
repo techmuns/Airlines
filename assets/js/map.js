@@ -525,8 +525,8 @@
         data: {
           labels: rangeSlice(monthLabels),
           datasets: [
-            line('RPK YoY %', rangeSlice(d.rpk.series), '#e6c978', 'rgba(230,201,120,.30)', 'y'),      // champagne gold (headline)
-            line('ASK YoY %', rangeSlice(d.ask.series), '#6fa8dc', 'rgba(111,168,220,.26)', 'y'),      // soft blue
+            line('RPK YoY %', rangeSlice(d.rpk.series), '#5b9bd5', 'rgba(91,155,213,.30)', 'y'),       // deck blue (headline)
+            line('ASK YoY %', rangeSlice(d.ask.series), '#a9cfee', 'rgba(169,207,238,.26)', 'y'),      // light blue
             line('PLF %', rangeSlice(d.plf.series), 'rgba(244,247,251,.85)', 'rgba(244,247,251,.20)', 'y1')  // light
           ]
         },
