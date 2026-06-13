@@ -282,8 +282,20 @@ def discover_latest_pdf() -> str:
 
 
 # ---------------------------------------------------------------------------
-def run(pdf_path: str, dry_run: bool) -> int:
+def run(pdf_path: str, dry_run: bool, dump: bool = False) -> int:
     text = extract_text(pdf_path)
+    if dump:
+        print("=== DUMP: extracted %d chars ===" % len(text))
+        idx = text.rfind("Air passenger market in detail")
+        if idx == -1:
+            print("[marker 'Air passenger market in detail' NOT found]")
+            j = text.find("TOTAL MARKET")
+            print("[TOTAL MARKET at %d]" % j)
+            print(repr(text[max(0, j - 150):j + 1600]))
+        else:
+            print("[detail table at %d]" % idx)
+            print(repr(text[idx:idx + 2400]))
+        return 0
     rec = parse_detail(text)
     print("Parsed %s — industry RPK %.1f%% ASK %.1f%% PLF %.1f%%"
           % (rec["month"], rec["industry"]["rpk"], rec["industry"]["ask"], rec["industry"]["plf"]))
@@ -312,6 +324,7 @@ def main(argv=None) -> int:
     g.add_argument("--pdf-url", help="URL of an IATA report PDF")
     g.add_argument("--fetch", action="store_true", help="discover & download the latest report from IATA")
     ap.add_argument("--dry-run", action="store_true", help="parse and print only; do not write")
+    ap.add_argument("--dump", action="store_true", help="print the report's detail-table text and exit")
     args = ap.parse_args(argv)
 
     tmp = None
@@ -322,7 +335,7 @@ def main(argv=None) -> int:
             pdf = tmp = _download_pdf(args.pdf_url)
         else:
             pdf = tmp = discover_latest_pdf()
-        return run(pdf, args.dry_run)
+        return run(pdf, args.dry_run, args.dump)
     except Exception as e:  # noqa: BLE001
         print("ERROR:", e, file=sys.stderr)
         return 1
