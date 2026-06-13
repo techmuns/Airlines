@@ -262,10 +262,18 @@ table.data tbody tr.is-sample { opacity: .66; }
    Monthly Detail — month × region heatmap matrix + market-share strip
    -------------------------------------------------------------------------- */
 .detail-mtx-scroll { max-height: 588px; overflow: auto; border-top: 1px solid var(--border); }
-table.detail-mtx { font-size: 10.5px; }
+table.detail-mtx {
+  font-size: 10.5px;
+  /* real gaps between cells so the dark card background peeps through and the
+     table reads as separated tiles rather than one merged grid */
+  border-collapse: separate;
+  border-spacing: 2px 2px;
+}
+/* the gaps are the separators — drop the per-cell grid lines */
+table.detail-mtx th, table.detail-mtx td { border: 0; }
 /* two-row sticky header: region groups on top, RPK/ASK/PLF beneath */
 table.detail-mtx thead tr.grp th { position: sticky; top: 0; z-index: 2; }
-table.detail-mtx thead tr.sub th { position: sticky; top: 29px; z-index: 2; }
+table.detail-mtx thead tr.sub th { position: sticky; top: 31px; z-index: 2; }
 table.detail-mtx thead .sub th { padding: 5px 6px; }
 table.detail-mtx .mlab {
   position: sticky; left: 0;
@@ -277,17 +285,21 @@ table.detail-mtx tbody .mlab { z-index: 1; }
 table.detail-mtx thead th.mlab { top: 0; z-index: 4; }
 table.detail-mtx td.val {
   min-width: 48px; padding: 6px 6px;
-  /* "center glow" cell: a soft inner light + faint inner ring layered OVER the
-     heatmap fill (colour unchanged) so each number sits on a gentle pool of
-     light and adjacent cells separate softly — no harsh grid, no heavy shadow */
-  border-color: rgba(148, 174, 210, .10);
+  /* "center glow" cell: a soft inner light layered OVER the heatmap fill
+     (colour unchanged) so each number sits on a gentle pool of light */
   background-image: radial-gradient(62% 72% at 50% 44%, rgba(255, 255, 255, .065), rgba(255, 255, 255, 0) 76%);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .03), inset 0 1px 0 rgba(255, 255, 255, .035);
 }
-/* group separators between regions + Industry header emphasis */
-table.detail-mtx .gstart { border-left: 2px solid rgba(148, 174, 210, .22); }
+/* wider gap before each region group: a soft, low-contrast block divider made
+   of background (the transparent border reveals the card behind the tile) */
+table.detail-mtx td.gstart,
+table.detail-mtx thead .grp th.gstart,
+table.detail-mtx thead .sub th.gstart {
+  border-left: 7px solid transparent;
+  background-clip: padding-box;
+}
 table.detail-mtx thead th.is-ind { color: var(--text); }
-table.detail-mtx thead tr.grp th.is-ind { background: #13294a; }
+table.detail-mtx thead tr.grp th.is-ind { background-color: #13294a; }
 
 .detail-embed { margin-top: var(--gap); padding-top: var(--gap); border-top: 1px solid var(--border); }
 .detail-intro { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 2px 2px 0; }
