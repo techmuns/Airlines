@@ -38,7 +38,6 @@
         var mapPanel = document.getElementById('panel-map');
         var tsaPanel = document.getElementById('panel-tsa');
         var iataPanel = document.getElementById('panel-iata');
-        var detailPanel = document.getElementById('panel-detail');
         var tabs = {
           map: { btn: document.getElementById('tab-map'), panel: mapPanel,
                  ctl: global.ADM.map.build(mapPanel, iata) },
@@ -47,13 +46,13 @@
           iata: { btn: document.getElementById('tab-iata'), panel: iataPanel,
                   ctl: global.ADM.iata.build(iataPanel, iata) }
         };
-        // Monthly Detail (client GS/IATA workbook) — only if its data loaded
+        // Monthly Detail is IATA data, so it lives at the bottom of the IATA tab
+        // (not a separate tab). Its System view stays in sync with data.json.
         if (detail && global.ADM.detail) {
-          tabs.detail = { btn: document.getElementById('tab-detail'), panel: detailPanel,
-                          ctl: global.ADM.detail.build(detailPanel, detail) };
-        } else {
-          var db = document.getElementById('tab-detail');
-          if (db) db.hidden = true;
+          var detailHost = document.createElement('div');
+          detailHost.className = 'detail-embed';
+          iataPanel.appendChild(detailHost);
+          global.ADM.detail.build(detailHost, detail);
         }
 
         function activate(key) {
@@ -68,7 +67,6 @@
         tabs.map.btn.addEventListener('click', function () { activate('map'); });
         tabs.tsa.btn.addEventListener('click', function () { activate('tsa'); });
         tabs.iata.btn.addEventListener('click', function () { activate('iata'); });
-        if (tabs.detail) tabs.detail.btn.addEventListener('click', function () { activate('detail'); });
         activate('map');
 
         // header Export: download the IATA regional figures as a CSV file

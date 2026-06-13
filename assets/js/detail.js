@@ -181,17 +181,31 @@
       ]);
     }
 
+    function intro() {
+      return el('div', { class: 'detail-intro' }, [
+        el('div', { class: 'section-head__title' }, [
+          el('span', { class: 'ico', html: U.ICONS.grid }), 'Monthly Detail'
+        ]),
+        el('div', { class: 'gdm-sechead-note' }, [
+          'System · International · Domestic — the client view, month by month'
+        ])
+      ]);
+    }
+
     function footer() {
       return el('div', { class: 'source-note' }, [
         el('span', {}, [el('b', {}, ['Source: ']), data._meta.source]),
         el('span', {}, [el('b', {}, ['Window: ']), data._meta.window_from + ' to ' + data._meta.latest]),
+        el('span', {}, [el('b', {}, ['Updates: ']),
+          'System refreshes automatically each month from the IATA report; ' +
+          'International and Domestic come from the client workbook.']),
         el('span', {}, ['Russian domestic figures end Feb 2022 (no longer reported).'])
       ]);
     }
 
     function render() {
       root.innerHTML = '';
-      var cards = [controls(), matrixCard(), shareCard(), footer()].filter(Boolean);
+      var cards = [intro(), controls(), matrixCard(), shareCard(), footer()].filter(Boolean);
       root.appendChild(el('div', { class: 'gdm-stack' }, cards));
     }
 

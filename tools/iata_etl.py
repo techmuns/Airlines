@@ -16,8 +16,12 @@ Modes
 The parser reads the "Air passenger market in detail" table, which is stable
 across IATA's monthly reports. Facts/figures (not the PDF itself) are stored.
 
+It also keeps data/iata_detail.json (the Monthly Detail tab's System view)
+current: that view is the same regional data, so each run extends it forward.
+
 Designed to run unattended in CI (see .github/workflows/update-iata-data.yml):
-fetch -> parse -> update data/data.json -> commit -> Cloudflare redeploys.
+fetch -> parse -> update data/data.json (+ iata_detail.json) -> commit ->
+Cloudflare redeploys.
 """
 
 from __future__ import annotations
@@ -33,6 +37,7 @@ import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_PATH = os.path.join(ROOT, "data", "data.json")
+DETAIL_PATH = os.path.join(ROOT, "data", "iata_detail.json")
 
 # IATA report region label (regex) -> dashboard region key. Reports vary: some
 # use "Latin America and Caribbean", others "Latin America".
@@ -281,6 +286,99 @@ def update_data(rec: dict, path: str = DATA_PATH):
 
 
 # ---------------------------------------------------------------------------
+# Keep the Monthly Detail dataset (data/iata_detail.json) current.
+# Its System view is the SAME regional RPK/ASK/PLF + market share this parser
+# already produces, so every monthly run extends it forward automatically — no
+# separate source, no manual spreadsheet. The International/Domestic views are
+# seeded from the client workbook and left untouched here.
+# ---------------------------------------------------------------------------
+# data.json region key -> iata_detail share key (the workbook drops the slash)
+_SHARE_KEY = {"Asia/Pacific": "Asia Pacific"}
+_DJ_METRIC = {"rpk": "rpk_yoy", "ask": "ask_yoy", "plf": "plf"}
+
+
+_SANE_REGIONS = ["Industry", "Africa", "Asia/Pacific", "Europe",
+                 "Latin America", "Middle East", "North America"]
+
+
+def _dj_month_sane(series: dict, i: int) -> bool:
+    """A real recent month sits in a believable band. This rejects mis-parsed /
+    placeholder months (e.g. a region showing -58% RPK) so only trustworthy
+    months extend the Monthly Detail view."""
+    for g in _SANE_REGIONS:
+        rpk = series.get("rpk_yoy", {}).get(g, [None] * (i + 1))[i]
+        ask = series.get("ask_yoy", {}).get(g, [None] * (i + 1))[i]
+        plf = series.get("plf", {}).get(g, [None] * (i + 1))[i]
+        if rpk is None or not (-30 < rpk < 45):
+            return False
+        if ask is not None and not (-30 < ask < 45):
+            return False
+        if plf is not None and not (40 < plf < 100):
+            return False
+    return True
+
+
+def sync_detail_from_data(data_path: str = DATA_PATH, detail_path: str = DETAIL_PATH) -> bool:
+    """Append trustworthy REAL months newer than the detail file's System view,
+    copying them from data.json. Existing months (the workbook's fuller history)
+    are never overwritten, and implausible/mis-parsed months are skipped. Best-
+    effort: returns False (and writes nothing) if the detail file is absent or
+    already current."""
+    if not os.path.exists(detail_path):
+        return False
+    with open(data_path) as f:
+        dj = json.load(f)
+    with open(detail_path) as f:
+        det = json.load(f)
+
+    sv = det.get("views", {}).get("system")
+    if not sv:
+        return False
+    months, groups, order, share = sv["months"], sv["groups"], sv["order"], sv["share_rpk"]
+    real = set(dj.get("_meta", {}).get("real_months", []))
+    dj_months, series, ms = dj["months"], dj["series"], dj.get("market_share", {})
+
+    add = [m for m in dj_months if m > months[-1] and m in real
+           and _dj_month_sane(series, dj_months.index(m))]
+    if not add:
+        return False
+
+    def pad(arr, n):
+        while len(arr) < n:
+            arr.append(None)
+
+    for m in add:
+        di = dj_months.index(m)
+        months.append(m)
+        n = len(months)
+        for g in order:
+            for met, dk in _DJ_METRIC.items():
+                col = groups.setdefault(g, {}).setdefault(met, [])
+                pad(col, n - 1)
+                arr = series.get(dk, {}).get(g)
+                col.append(arr[di] if arr and di < len(arr) else None)
+        for k in share:
+            pad(share[k], n - 1)
+            share[k].append(None)
+
+    newest = len(months) - 1                      # set newest-month shares
+    for djk, val in ms.items():
+        if djk == "Industry":
+            continue
+        sk = _SHARE_KEY.get(djk, djk)
+        if sk in share:
+            share[sk][newest] = val
+    if "Total" in share:
+        share["Total"][newest] = 100.0
+
+    det["_meta"]["latest"] = months[-1]
+    det["_meta"]["generated"] = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    with open(detail_path, "w") as f:
+        json.dump(det, f, separators=(",", ":"))
+    return True
+
+
+# ---------------------------------------------------------------------------
 # Fetch the latest report from IATA (best-effort; runs from CI, not the sandbox)
 # ---------------------------------------------------------------------------
 def _get(url: str, timeout: int = 40) -> bytes:
@@ -381,6 +479,11 @@ def run(pdf_path: str, dry_run: bool, dump: bool = False) -> int:
                  ", ".join(data["_meta"]["real_months"])))
     else:
         print("No change — %s already present with identical figures." % rec["month"])
+    try:
+        if sync_detail_from_data():
+            print("Also extended data/iata_detail.json (Monthly Detail, System view) to the latest month.")
+    except Exception as e:  # noqa: BLE001
+        print("  (iata_detail sync skipped: %s)" % e)
     return 0
 
 
