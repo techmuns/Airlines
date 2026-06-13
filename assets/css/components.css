@@ -275,7 +275,15 @@ table.detail-mtx .mlab {
 }
 table.detail-mtx tbody .mlab { z-index: 1; }
 table.detail-mtx thead th.mlab { top: 0; z-index: 4; }
-table.detail-mtx td.val { min-width: 48px; padding: 6px 6px; }
+table.detail-mtx td.val {
+  min-width: 48px; padding: 6px 6px;
+  /* "center glow" cell: a soft inner light + faint inner ring layered OVER the
+     heatmap fill (colour unchanged) so each number sits on a gentle pool of
+     light and adjacent cells separate softly — no harsh grid, no heavy shadow */
+  border-color: rgba(148, 174, 210, .10);
+  background-image: radial-gradient(62% 72% at 50% 44%, rgba(255, 255, 255, .065), rgba(255, 255, 255, 0) 76%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .03), inset 0 1px 0 rgba(255, 255, 255, .035);
+}
 /* group separators between regions + Industry header emphasis */
 table.detail-mtx .gstart { border-left: 2px solid rgba(148, 174, 210, .22); }
 table.detail-mtx thead th.is-ind { color: var(--text); }
