@@ -33,7 +33,7 @@ Three tabs:
    and read every month down the page as one clean colour-coded grid
    (green = growth, red = decline), region by region. Below it is a
    market-share strip and a **Download CSV** button for the month-by-month
-   numbers. Its System view stays in step with the automatic monthly update.
+   numbers. All three views stay in step with the automatic monthly update.
 
 The TSA and IATA sections are kept completely separate, as requested: the
 Global Demand Map and the Airline Traffic tab use IATA regional data only, and
@@ -46,12 +46,11 @@ The dashboard reads these small data files:
 - `data/tsa.json` — daily TSA passenger numbers
 - `data/data.json` — monthly global airline traffic (IATA)
 - `data/iata_detail.json` — the Monthly Detail section (System / International /
-  Domestic, by region/country, 2011→now). The long history is seeded once from
-  the client's Goldman Sachs / IATA Excel by `tools/iata_excel_etl.py`; from
-  then on the **System** view is extended automatically every month by the same
-  IATA pipeline that updates `data.json` (it's the same regional figures), so
-  no spreadsheet is needed to keep it current. International / Domestic refresh
-  when a new workbook is imported.
+  Domestic, by region/country, 2011→now). The long pre-2026 history is seeded
+  once from the client's Goldman Sachs / IATA Excel by `tools/iata_excel_etl.py`;
+  from then on **all three views** are extended automatically every month by the
+  IATA pipeline, which reads the report's System, International and Domestic
+  sections — so no spreadsheet is needed to keep it current.
 
 ### Real IATA data (automatic, monthly)
 

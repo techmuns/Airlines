@@ -50,6 +50,16 @@ REGION_PATTERNS = [
     (r"Middle East", "Middle East"),
     (r"North America", "North America"),
 ]
+# Domestic-market label (regex) -> iata_detail country key. Reports prefix some
+# months with "Dom." and write "China P.R." / "United States".
+DOMESTIC_PATTERNS = [
+    (r"(?:Dom\.\s*)?Australia", "Australia"),
+    (r"(?:Dom\.\s*)?Brazil", "Brazil"),
+    (r"(?:Dom\.\s*)?China(?:\s+P\.?R\.?)?", "China"),
+    (r"(?:Dom\.\s*)?India", "India"),
+    (r"(?:Dom\.\s*)?Japan", "Japan"),
+    (r"(?:Dom\.\s*)?United States", "US"),
+]
 MONTHNUM = {m: i + 1 for i, m in enumerate(
     ["January", "February", "March", "April", "May", "June",
      "July", "August", "September", "October", "November", "December"])}
@@ -181,6 +191,44 @@ def _parse_column_major(block: str, month: str) -> dict:
                       "international_rpk": intl_rpk, "domestic_rpk": dom_rpk})
 
 
+def parse_intl_dom(block: str) -> dict:
+    """Extract the International and Domestic sections of the detail table —
+    per-region (International) and per-country (Domestic) share / RPK / ASK / PLF
+    level. Reuses _row, which reads the first five numbers after a label and
+    ignores the year-to-date columns. Best-effort: returns whatever it finds.
+    Keys are the dashboard's group names (so they merge straight into
+    data/iata_detail.json's 'international' and 'domestic' views)."""
+    out = {"international": {}, "domestic": {}}
+    i_intl = block.find("International")
+    i_dom = block.find("Domestic", i_intl) if i_intl != -1 else block.find("Domestic")
+    i_note = block.find("Note 1")
+    if i_note == -1:
+        i_note = len(block)
+
+    if i_intl != -1 and i_dom != -1:
+        sec = block[i_intl:i_dom]
+        hdr = _row(sec, "International")               # section total = "Industry" row
+        if hdr:
+            out["international"]["Industry"] = {"share": hdr[0], "rpk": hdr[1], "ask": hdr[2], "plf": hdr[4]}
+        for pat, key in REGION_PATTERNS:
+            if key == "Industry":
+                continue
+            row = _row(sec, pat)
+            if row:
+                out["international"][key] = {"share": row[0], "rpk": row[1], "ask": row[2], "plf": row[4]}
+
+    if i_dom != -1:
+        sec = block[i_dom:i_note]
+        hdr = _row(sec, "Domestic")
+        if hdr:
+            out["domestic"]["Industry"] = {"share": hdr[0], "rpk": hdr[1], "ask": hdr[2], "plf": hdr[4]}
+        for pat, key in DOMESTIC_PATTERNS:
+            row = _row(sec, pat)
+            if row:
+                out["domestic"][key] = {"share": row[0], "rpk": row[1], "ask": row[2], "plf": row[4]}
+    return out
+
+
 def parse_detail(text: str) -> dict:
     # Use the most complete table (the full regional one near the end).
     idx = text.rfind("Air passenger market in detail")
@@ -192,9 +240,16 @@ def parse_detail(text: str) -> dict:
         raise ValueError("Could not read the report month from the table header.")
     month = "%04d-%02d" % (int(mm.group(2)), MONTHNUM[mm.group(1)])
     try:
-        return _parse_row_major(block, month)
+        rec = _parse_row_major(block, month)
     except ValueError:
-        return _parse_column_major(block, month)
+        rec = _parse_column_major(block, month)
+    try:                                                # additive: International/Domestic detail
+        extra = parse_intl_dom(block)
+        rec["international_detail"] = extra["international"]
+        rec["domestic_detail"] = extra["domestic"]
+    except Exception:                                   # never let this break the core parse
+        rec["international_detail"], rec["domestic_detail"] = {}, {}
+    return rec
 
 
 # ---------------------------------------------------------------------------
@@ -290,11 +345,11 @@ def update_data(rec: dict, path: str = DATA_PATH):
 
 
 # ---------------------------------------------------------------------------
-# Keep the Monthly Detail dataset (data/iata_detail.json) current.
-# Its System view is the SAME regional RPK/ASK/PLF + market share this parser
-# already produces, so every monthly run extends it forward automatically — no
-# separate source, no manual spreadsheet. The International/Domestic views are
-# seeded from the client workbook and left untouched here.
+# Keep the Monthly Detail dataset (data/iata_detail.json) current. All three
+# views come from this same report: the System view from data.json (below), and
+# the International / Domestic views straight from the report's own sections, so
+# every monthly run extends all of them forward — no manual spreadsheet. The
+# workbook only seeds the long pre-2026 history.
 # ---------------------------------------------------------------------------
 # data.json region key -> iata_detail share key (the workbook drops the slash)
 _SHARE_KEY = {"Asia/Pacific": "Asia Pacific"}
@@ -358,6 +413,70 @@ def sync_detail_from_data(data_path: str = DATA_PATH, detail_path: str = DETAIL_
     with open(detail_path, "w") as f:
         json.dump(det, f, separators=(",", ":"))
     return True
+
+
+def update_detail_intl_dom(month: str, intl: dict, dom: dict, detail_path: str = DETAIL_PATH) -> bool:
+    """Write a report's International and Domestic sections into the matching
+    views of data/iata_detail.json for `month` (appending the month if it is
+    newer than that view's last). Best-effort and additive; never overwrites the
+    workbook history before the seed range."""
+    if not os.path.exists(detail_path) or (not intl and not dom):
+        return False
+    with open(detail_path) as f:
+        det = json.load(f)
+
+    def pad(arr, n):
+        while len(arr) < n:
+            arr.append(None)
+
+    changed = False
+    for view_name, rows in (("international", intl), ("domestic", dom)):
+        v = det.get("views", {}).get(view_name)
+        if not v or not rows:
+            continue
+        months, groups, order, share = v["months"], v["groups"], v["order"], v.get("share_rpk", {})
+        if month in months:
+            i = months.index(month)
+        elif month > months[-1]:
+            for mk in _months_between(months[-1], month):
+                months.append(mk)
+                n = len(months)
+                for g in order:
+                    for met in ("rpk", "ask", "plf"):
+                        col = groups.setdefault(g, {}).setdefault(met, [])
+                        pad(col, n - 1)
+                        col.append(None)
+                for k in share:
+                    pad(share[k], n - 1)
+                    share[k].append(None)
+            i = len(months) - 1
+        else:
+            continue                                   # predates the seeded history
+
+        for key, vals in rows.items():
+            if key in groups:
+                for met in ("rpk", "ask", "plf"):
+                    col = groups[key].setdefault(met, [])
+                    pad(col, len(months))
+                    col[i] = vals.get(met)
+                changed = True
+            # market share: regions/countries by name, Total from the section header
+            if key == "Industry":
+                if "Total" in share and vals.get("share") is not None:
+                    pad(share["Total"], len(months))
+                    share["Total"][i] = vals["share"]
+            else:
+                sk = _SHARE_KEY.get(key, key)
+                if sk in share and vals.get("share") is not None:
+                    pad(share[sk], len(months))
+                    share[sk][i] = vals["share"]
+        det["_meta"]["latest"] = max(det["_meta"].get("latest", month), months[-1])
+
+    if changed:
+        det["_meta"]["generated"] = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        with open(detail_path, "w") as f:
+            json.dump(det, f, separators=(",", ":"))
+    return changed
 
 
 # ---------------------------------------------------------------------------
@@ -465,7 +584,13 @@ def run(pdf_path: str, dry_run: bool, dump: bool = False) -> int:
         if sync_detail_from_data():
             print("Also extended data/iata_detail.json (Monthly Detail, System view) to the latest month.")
     except Exception as e:  # noqa: BLE001
-        print("  (iata_detail sync skipped: %s)" % e)
+        print("  (iata_detail system sync skipped: %s)" % e)
+    try:
+        if update_detail_intl_dom(rec["month"], rec.get("international_detail", {}),
+                                  rec.get("domestic_detail", {})):
+            print("Also updated International/Domestic detail for %s." % rec["month"])
+    except Exception as e:  # noqa: BLE001
+        print("  (iata_detail International/Domestic update skipped: %s)" % e)
     return 0
 
 
