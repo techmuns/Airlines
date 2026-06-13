@@ -98,12 +98,12 @@ def _finalise(rec: dict) -> dict:
     share-weighted average of the six regional RPKs. A mis-read layout scrambles
     the region<->value mapping and fails this, so we never publish wrong data.
 
-    The YoY band is deliberately tight (-40..60%): outside a COVID-scale shock,
-    no IATA region moves that far month-on-month, so a value beyond it means a
-    mis-parse or placeholder, not real data — reject rather than publish it."""
+    The band stays wide (-100..100%): IATA genuinely reports large swings (e.g.
+    Middle East -46.6% in Apr 2026 from airspace disruption), so correctness is
+    enforced by the reconciliation check below, not by a tight value band."""
     for v in rec["regions"].values():
         if not (0 < v["share"] <= 100 and 40 < v["plf"] < 100
-                and -40 < v["rpk"] < 60 and -40 < v["ask"] < 60):
+                and -100 < v["rpk"] < 100 and -100 < v["ask"] < 100):
             raise ValueError("%s: figures out of sane range." % rec["month"])
     ws = sum(rec["regions"][k]["share"] for k in WORLD_ORDER)
     wr = sum(rec["regions"][k]["share"] * rec["regions"][k]["rpk"] for k in WORLD_ORDER) / ws
@@ -301,33 +301,12 @@ _SHARE_KEY = {"Asia/Pacific": "Asia Pacific"}
 _DJ_METRIC = {"rpk": "rpk_yoy", "ask": "ask_yoy", "plf": "plf"}
 
 
-_SANE_REGIONS = ["Industry", "Africa", "Asia/Pacific", "Europe",
-                 "Latin America", "Middle East", "North America"]
-
-
-def _dj_month_sane(series: dict, i: int) -> bool:
-    """A real recent month sits in a believable band. This rejects mis-parsed /
-    placeholder months (e.g. a region showing -58% RPK) so only trustworthy
-    months extend the Monthly Detail view."""
-    for g in _SANE_REGIONS:
-        rpk = series.get("rpk_yoy", {}).get(g, [None] * (i + 1))[i]
-        ask = series.get("ask_yoy", {}).get(g, [None] * (i + 1))[i]
-        plf = series.get("plf", {}).get(g, [None] * (i + 1))[i]
-        if rpk is None or not (-30 < rpk < 45):
-            return False
-        if ask is not None and not (-30 < ask < 45):
-            return False
-        if plf is not None and not (40 < plf < 100):
-            return False
-    return True
-
-
 def sync_detail_from_data(data_path: str = DATA_PATH, detail_path: str = DETAIL_PATH) -> bool:
-    """Append trustworthy REAL months newer than the detail file's System view,
-    copying them from data.json. Existing months (the workbook's fuller history)
-    are never overwritten, and implausible/mis-parsed months are skipped. Best-
-    effort: returns False (and writes nothing) if the detail file is absent or
-    already current."""
+    """Append REAL months newer than the detail file's System view, copying them
+    from data.json. Existing months (the workbook's fuller history) are never
+    overwritten. Months in data.json are already validated at parse time
+    (reconciliation in _finalise), so they are trusted here. Best-effort:
+    returns False (and writes nothing) if the detail file is absent or current."""
     if not os.path.exists(detail_path):
         return False
     with open(data_path) as f:
@@ -342,8 +321,7 @@ def sync_detail_from_data(data_path: str = DATA_PATH, detail_path: str = DETAIL_
     real = set(dj.get("_meta", {}).get("real_months", []))
     dj_months, series, ms = dj["months"], dj["series"], dj.get("market_share", {})
 
-    add = [m for m in dj_months if m > months[-1] and m in real
-           and _dj_month_sane(series, dj_months.index(m))]
+    add = [m for m in dj_months if m > months[-1] and m in real]
     if not add:
         return False
 
