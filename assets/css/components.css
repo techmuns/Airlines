@@ -267,7 +267,7 @@ table.detail-mtx {
   /* real gaps between cells so the dark card background peeps through and the
      table reads as separated tiles rather than one merged grid */
   border-collapse: separate;
-  border-spacing: 2px 2px;
+  border-spacing: 1px 2px;
 }
 /* the gaps are the separators — drop the per-cell grid lines */
 table.detail-mtx th, table.detail-mtx td { border: 0; }
@@ -279,12 +279,12 @@ table.detail-mtx .mlab {
   position: sticky; left: 0;
   text-align: left; white-space: nowrap; background: var(--tint);
   color: var(--on-navy-soft); font-weight: 600; font-variant-numeric: tabular-nums;
-  padding: 6px 12px; min-width: 84px;
+  padding: 6px 10px; min-width: 72px;
 }
 table.detail-mtx tbody .mlab { z-index: 1; }
 table.detail-mtx thead th.mlab { top: 0; z-index: 4; }
 table.detail-mtx td.val {
-  min-width: 48px; padding: 6px 6px;
+  min-width: 40px; padding: 6px 4px;
   /* "center glow" cell: a soft inner light layered OVER the heatmap fill
      (colour unchanged) so each number sits on a gentle pool of light */
   background-image: radial-gradient(62% 72% at 50% 44%, rgba(255, 255, 255, .065), rgba(255, 255, 255, 0) 76%);
@@ -295,7 +295,7 @@ table.detail-mtx td.val {
 table.detail-mtx td.gstart,
 table.detail-mtx thead .grp th.gstart,
 table.detail-mtx thead .sub th.gstart {
-  border-left: 7px solid transparent;
+  border-left: 5px solid transparent;
   background-clip: padding-box;
 }
 table.detail-mtx thead th.is-ind { color: var(--text); }
