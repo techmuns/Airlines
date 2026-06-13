@@ -100,15 +100,15 @@ badge and a dot per row. So every figure's source is visible at a glance.
 
 ## Going live (one-time, done once)
 
-The site is ready to be hosted on **Cloudflare Pages**, which will publish a new
-version automatically every time data lands on `main`. The one-time connection
-(GitHub → Cloudflare Pages) settings are:
+The site deploys on **Cloudflare** straight from `main` — every time data lands,
+Cloudflare rebuilds and republishes automatically. Because the dashboard is
+plain static files, a small **`wrangler.jsonc`** in the repo tells Cloudflare to
+serve the repository as static assets (no Worker code, no build step), and
+**`.assetsignore`** keeps the tooling and docs out of the published site. If the
+Cloudflare project is named something other than `airlines`, change the `name`
+in `wrangler.jsonc` to match.
 
-- **Framework preset:** None
-- **Build command:** *(leave empty)*
-- **Build output directory:** `/`
-
-After that one connection, everything is automatic forever.
+After the one-time GitHub → Cloudflare connection, everything is automatic.
 
 ## For developers
 

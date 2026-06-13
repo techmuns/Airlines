@@ -1,0 +1,11 @@
+# Files that are part of the repo but not the website, so Cloudflare doesn't
+# upload them as public assets. (Patterns use .gitignore syntax.)
+.git
+.github
+node_modules
+tools
+*.py
+*.md
+.gitignore
+wrangler.jsonc
+.assetsignore

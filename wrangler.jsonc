@@ -1,0 +1,11 @@
+{
+  // Static-site deploy on Cloudflare Workers. There is no Worker script — the
+  // dashboard is plain files — so we just serve this repo as static assets.
+  // This fixes the deploy error "Missing entry-point to Worker script or to
+  // assets directory" that `wrangler versions upload` raises without it.
+  "name": "airlines",
+  "compatibility_date": "2026-06-13",
+  "assets": {
+    "directory": "."
+  }
+}
