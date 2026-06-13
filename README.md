@@ -54,7 +54,28 @@ that table and fills `data/data.json` — no spreadsheets, no copy-paste:
 `data/data.json` carries a `_meta.real_months` list of the months filled with
 **real** IATA figures; any month not listed is still synthetic sample data and
 is replaced as soon as that month's report is processed. The figures (not the
-PDF) are stored, and TSA data is untouched by this pipeline.
+PDF) are stored.
+
+### Real TSA data (automatic, daily)
+
+TSA publishes daily checkpoint passenger volumes on `tsa.gov/travel/passenger-volumes`.
+
+- `tools/tsa_etl.py` reads that table into `data/tsa.json`.
+  - `python3 tools/tsa_etl.py` — fetch & merge the latest days
+  - `python3 tools/tsa_etl.py --diagnose` — print the page structure
+  - `python3 tools/tsa_etl.py --backfill "YYYYMMDD ..."` — seed history from
+    Internet-Archive snapshots of the same table
+- `.github/workflows/update-tsa-data.yml` runs daily and commits any change.
+
+`data/tsa.json` carries `_meta.real_days` (and `_meta.real_from`) marking the
+real days; the rest stay synthetic sample. The two pipelines are independent —
+IATA fills the regional tabs, TSA fills the TSA tab.
+
+### What's real vs sample
+
+Both tabs **label their data**: the Global Demand Map shows a "real IATA data"
+badge and dotted-vs-dashed trend lines; the TSA tab shows a "real TSA data"
+badge and a dot per row. So every figure's source is visible at a glance.
 
 ## Built to be reliable
 
