@@ -243,3 +243,17 @@ table.hm tbody tr.is-industry td.val { box-shadow: inset 0 0 0 9999px rgba(123, 
 .insight__title { font-size: 13px; font-weight: 600; color: #f0e6cd; margin-bottom: 4px; }
 .insight__body { font-size: 12px; font-weight: 400; color: var(--text-muted); line-height: 1.5; }
 .insight__body b { color: var(--text); font-weight: 600; }
+
+/* --------------------------------------------------------------------------
+   TSA source tags (real vs sample) — mirrors the IATA tagging
+   -------------------------------------------------------------------------- */
+.tsa-src-badge {
+  font-size: 9px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 999px; margin-right: 6px;
+}
+.tsa-src-badge.is-real { background: rgba(64, 168, 118, .18); color: #79d3a4; border: 1px solid rgba(64, 168, 118, .4); }
+.tsa-src-badge.is-sample { background: rgba(201, 168, 92, .16); color: #d9c389; border: 1px solid rgba(201, 168, 92, .4); }
+.tsa-src-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.tsa-src-dot.is-real { background: #5fbf8a; }
+.tsa-src-dot.is-sample { background: rgba(159, 173, 201, .4); }
+table.data tbody tr.is-sample { opacity: .66; }

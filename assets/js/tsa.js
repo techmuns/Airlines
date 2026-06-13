@@ -58,6 +58,16 @@
     var latest = days[days.length - 1];
     var prev = days[days.length - 2];
 
+    /* provenance: which days are real TSA figures vs synthetic sample */
+    var REAL = {};
+    ((raw._meta && raw._meta.real_days) || []).forEach(function (d) { REAL[d] = true; });
+    var realCount = Object.keys(REAL).length;
+    var realFrom = raw._meta && raw._meta.real_from;
+    var srcLabel = realCount
+      ? (realCount + ' of ' + days.length + ' days are real TSA data'
+         + (realFrom ? ' (from ' + U.fmtDateLong(realFrom) + ')' : ''))
+      : 'sample data';
+
     /* ---- A. Hero KPI strip ---- */
     var heroRow = el('div', { class: 'hero__row' }, [
       kpi({ icon: I.people, label: 'Latest Passenger Count',
@@ -74,8 +84,9 @@
     var hero = el('div', { class: 'card hero' }, [
       heroRow,
       el('div', { class: 'hero__note' }, [
+        el('span', { class: 'tsa-src-badge ' + (realCount ? 'is-real' : 'is-sample'), text: srcLabel }),
         el('span', { class: 'ico', html: I.calendar }),
-        'Updated Mon–Fri by 9 a.m.; holiday weeks may be delayed.'
+        'Updated daily from TSA.gov; holiday weeks may be delayed.'
       ])
     ]);
 
@@ -101,8 +112,13 @@
     var tbody = el('tbody');
     days.slice().reverse().forEach(function (d) {
       function pctCell(v) { return el('td', { class: 'pct ' + U.signClass(v), text: U.fmtPct(v) }); }
-      tbody.appendChild(el('tr', {}, [
-        el('td', { class: 'date', text: U.fmtDateLong(d.date) }),
+      var isReal = !!REAL[d.date];
+      tbody.appendChild(el('tr', { class: isReal ? 'is-real' : 'is-sample',
+        title: isReal ? 'Real TSA figure' : 'Sample data' }, [
+        el('td', { class: 'date' }, [
+          el('span', { class: 'tsa-src-dot ' + (isReal ? 'is-real' : 'is-sample') }),
+          U.fmtDateLong(d.date)
+        ]),
         el('td', { class: 'strong num', text: U.fmtInt(d.throughput) }),
         pctCell(d.dod), pctCell(d.wow), pctCell(d.yoy),
         el('td', { class: 'num', text: U.fmtInt(d.sevenDMA) }),
