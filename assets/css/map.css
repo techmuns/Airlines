@@ -207,3 +207,28 @@ table.hm.gdm-snaptbl tbody td.val { min-width: 64px; }
 @media (max-width: 720px) {
   .gdm-maplegend { display: none; }
 }
+
+/* --------------------------------------------------------------------------
+   Source tags (real IATA data vs sample) — so figures are clearly labelled
+   -------------------------------------------------------------------------- */
+.gdm-src-tag {
+  font-size: 8.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 999px; white-space: nowrap;
+}
+.gdm-src-tag.is-real { background: rgba(64, 168, 118, .18); color: #79d3a4; border: 1px solid rgba(64,168,118,.4); }
+.gdm-src-tag.is-sample { background: rgba(201, 168, 92, .16); color: #d9c389; border: 1px solid rgba(201,168,92,.4); }
+.gdm-src-count { color: var(--text-faint); font-size: 10.5px; font-weight: 500; }
+
+.gdm-srcnote {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  padding: 8px 2px 0; font-size: 10px; color: var(--text-muted);
+}
+.gdm-srcnote__item { display: inline-flex; align-items: center; gap: 6px; }
+.gdm-srcnote__dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--gold-bright);
+  box-shadow: 0 0 0 2px rgba(217,179,106,.2);
+}
+.gdm-srcnote__dash {
+  width: 16px; height: 0; border-top: 2px dashed rgba(159, 173, 201, .7);
+  display: inline-block;
+}

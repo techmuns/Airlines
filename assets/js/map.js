@@ -102,6 +102,12 @@
     var latestMonthLong = U.fmtMonthLong(latestKey);
     var rangeSub = U.fmtMonthLong(months[0]) + ' – ' + latestMonthLong;
 
+    /* provenance: which months are real IATA figures vs synthetic sample */
+    var REAL = {};
+    ((raw._meta && raw._meta.real_months) || []).forEach(function (m) { REAL[m] = true; });
+    var realCount = Object.keys(REAL).length;
+    var latestIsReal = !!REAL[latestKey];
+
     /* latest *full* calendar year (for the Year period) */
     var lastMonthNum = Number(latestKey.slice(5, 7));
     var fullYear = lastMonthNum === 12 ? Number(latestKey.slice(0, 4)) : Number(latestKey.slice(0, 4)) - 1;
@@ -181,8 +187,13 @@
     var controlBar = el('div', { class: 'card gdm-controlbar' }, [
       el('div', { class: 'gdm-controls' }, [metricSeg.el, viewSeg.el, periodSeg.el]),
       el('div', { class: 'gdm-controlbar__meta' }, [
+        el('span', { class: 'gdm-src-tag ' + (latestIsReal ? 'is-real' : 'is-sample'),
+          title: latestIsReal ? 'This month is real IATA data' : 'This month is sample data' },
+          [latestIsReal ? 'IATA actual' : 'sample']),
         el('span', { class: 'ico', html: I.calendar }),
-        'Latest month · ' + latestMonthLong
+        'Latest month · ' + latestMonthLong,
+        el('span', { class: 'gdm-src-count',
+          text: '· ' + realCount + ' of ' + months.length + ' months real' })
       ])
     ]);
 
@@ -204,7 +215,11 @@
         el('div', { class: 'card-title' }, [el('span', { class: 'ico', html: I.trend }), trendTitle]),
         rangeSel
       ]),
-      el('div', { class: 'chart-card__canvas gdm-trend__canvas' }, [trendCanvas])
+      el('div', { class: 'chart-card__canvas gdm-trend__canvas' }, [trendCanvas]),
+      el('div', { class: 'gdm-srcnote' }, [
+        el('span', { class: 'gdm-srcnote__item' }, [el('span', { class: 'gdm-srcnote__dot is-real' }), 'dots = real IATA data']),
+        el('span', { class: 'gdm-srcnote__item' }, [el('span', { class: 'gdm-srcnote__dash' }), 'dashed = sample (awaiting report)'])
+      ])
     ]);
 
     var snap = buildSnapshot();
@@ -543,19 +558,28 @@
         }
       });
     }
+    function visMonths() { return rangeSlice(months); }
+    function pointRadii() { return visMonths().map(function (m) { return REAL[m] ? 2.6 : 0; }); }
+    // real months are drawn solid with a dot; sample months get a dashed segment
+    function dashSeg(ctx) {
+      var vm = visMonths();
+      return (REAL[vm[ctx.p0DataIndex]] && REAL[vm[ctx.p1DataIndex]]) ? undefined : [4, 3];
+    }
     function line(label, data, color, axis) {
       return { label: label, data: data, yAxisID: axis, borderColor: color, backgroundColor: color,
-        borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: color,
-        tension: 0.3, spanGaps: true };
+        borderWidth: 2, pointRadius: pointRadii(), pointBackgroundColor: color,
+        pointHoverRadius: 4, pointHoverBackgroundColor: color,
+        segment: { borderDash: dashSeg }, tension: 0.3, spanGaps: true };
     }
     function updateTrend() {
       trendTitle.textContent = 'Regional Trend — ' + state.region;
       if (!trendChart) return;
-      var d = S[state.region];
+      var d = S[state.region], pr = pointRadii();
       trendChart.data.labels = rangeSlice(monthLabels);
-      trendChart.data.datasets[0].data = rangeSlice(d.rpk.series);
-      trendChart.data.datasets[1].data = rangeSlice(d.ask.series);
-      trendChart.data.datasets[2].data = rangeSlice(d.plf.series);
+      [d.rpk.series, d.ask.series, d.plf.series].forEach(function (s, i) {
+        trendChart.data.datasets[i].data = rangeSlice(s);
+        trendChart.data.datasets[i].pointRadius = pr;
+      });
       trendChart.update();
     }
 
