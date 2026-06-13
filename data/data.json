@@ -7,7 +7,7 @@
       "ask_yoy": "Available Seat Kilometres, year-over-year %",
       "plf": "Passenger Load Factor, level %"
     },
-    "generated": "2026-06-13T13:01:16Z",
+    "generated": "2026-06-13T18:24:42Z",
     "latest_month": "2026-04",
     "real_months": [
       "2024-02",
@@ -774,8 +774,8 @@
   "market_share": {
     "Industry": 100.0,
     "Africa": 2.2,
-    "Asia/Pacific": 34.5,
-    "Europe": 26.6,
+    "Asia/Pacific": 34.4,
+    "Europe": 26.7,
     "Latin America": 5.4,
     "Middle East": 9.5,
     "North America": 21.8
