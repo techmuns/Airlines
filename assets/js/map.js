@@ -525,7 +525,7 @@
         data: {
           labels: rangeSlice(monthLabels),
           datasets: [
-            line('RPK YoY %', rangeSlice(d.rpk.series), '#d9b36a', 'rgba(217,179,106,.28)', 'y'),      // gold
+            line('RPK YoY %', rangeSlice(d.rpk.series), '#f0cd7c', 'rgba(240,205,124,.32)', 'y'),      // bright gold
             line('ASK YoY %', rangeSlice(d.ask.series), '#7ba7da', 'rgba(123,167,218,.28)', 'y'),      // soft blue
             line('PLF %', rangeSlice(d.plf.series), 'rgba(234,240,250,.85)', 'rgba(234,240,250,.22)', 'y1')  // light
           ]
