@@ -6,6 +6,11 @@
   var U = global.ADM.util, C = global.ADM.calc, CH = global.ADM.charts,
       HM = global.ADM.heatmap, el = U.el, I = U.ICONS;
 
+  // resilience: if a stale cached charts.js is missing these helpers, fall back
+  // to a solid bar colour so the charts still render (never blank).
+  if (!CH.barColors) CH.barColors = function () { return CH.INK.navy; };
+  if (!CH.round1) { CH.round1 = function (v) { return v; }; CH.roundM1 = CH.round1; }
+
   function regionIcon(r) { return r === 'Industry' ? I.globe : I.pin; }
 
   function summarise(raw) {
