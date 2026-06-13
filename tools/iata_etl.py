@@ -73,25 +73,103 @@ def extract_text(pdf_path: str) -> str:
 # ---------------------------------------------------------------------------
 # Parse the "Air passenger market in detail" table
 # ---------------------------------------------------------------------------
+WORLD_ORDER = ["Africa", "Asia/Pacific", "Europe", "Latin America", "Middle East", "North America"]
+
+
 def _row(text: str, label_pat: str):
-    """Find `label_pat` immediately followed by 5 numbers:
-    share, RPK, ASK, PLF(pp), PLF(level). The numbers must directly follow the
-    label (only whitespace between), which makes the column-major layout — where
-    the labels and numbers are far apart — fail safely rather than mis-parse."""
+    """Find `label_pat` immediately followed by 5 numbers (share, RPK, ASK,
+    PLF pp, PLF level). The numbers must directly follow the label."""
     pat = label_pat + r"\s*" + r"\s*".join([NUM] * 5)
     m = re.search(pat, text)
     return [float(x) for x in m.groups()] if m else None
 
 
-def _sane(rec: dict) -> bool:
+def _floats(text: str):
+    return [float(x) for x in re.findall(r"-?\d+\.\d+", text)]
+
+
+def _finalise(rec: dict) -> dict:
+    """Sanity + a strong correctness check: the industry RPK must equal the
+    share-weighted average of the six regional RPKs. A mis-read layout scrambles
+    the region<->value mapping and fails this, so we never publish wrong data."""
     for v in rec["regions"].values():
-        if not (0 < v["share"] <= 100):
-            return False
-        if not (40 < v["plf"] < 100):
-            return False
-        if not (-100 < v["rpk"] < 100 and -100 < v["ask"] < 100):
-            return False
-    return True
+        if not (0 < v["share"] <= 100 and 40 < v["plf"] < 100
+                and -100 < v["rpk"] < 100 and -100 < v["ask"] < 100):
+            raise ValueError("%s: figures out of sane range." % rec["month"])
+    ws = sum(rec["regions"][k]["share"] for k in WORLD_ORDER)
+    wr = sum(rec["regions"][k]["share"] * rec["regions"][k]["rpk"] for k in WORLD_ORDER) / ws
+    if abs(wr - rec["industry"]["rpk"]) > 1.0:
+        raise ValueError("%s: regional RPKs (wtd %.2f) don't reconcile with industry %.2f."
+                         % (rec["month"], wr, rec["industry"]["rpk"]))
+    return rec
+
+
+def _parse_row_major(block: str, month: str) -> dict:
+    """Newer/older row layout: each region label is followed by its numbers."""
+    t0 = block.find("TOTAL MARKET")
+    t_intl = block.find("International", t0)
+    if t0 == -1 or t_intl == -1:
+        raise ValueError("row-major markers not found")
+    world = block[t0:t_intl]
+    industry, regions = None, {}
+    for pat, key in REGION_PATTERNS:
+        row = _row(world, pat)
+        if row is None:
+            continue
+        share, rpk, ask, plf_pp, plf = row
+        r = {"share": share, "rpk": rpk, "ask": ask, "plf": plf, "plf_pp": plf_pp}
+        if key == "Industry":
+            industry = r
+        else:
+            regions[key] = r
+    if industry is None or len(regions) != 6:
+        raise ValueError("row-major parsed %d/6 regions" % len(regions))
+    intl = _row(block[t_intl:], "International")
+    dom_idx = block.find("Domestic", t_intl)
+    dom = _row(block[dom_idx:], "Domestic") if dom_idx != -1 else None
+    return _finalise({"month": month, "industry": industry, "regions": regions,
+                      "international_rpk": intl[1] if intl else None,
+                      "domestic_rpk": dom[1] if dom else None})
+
+
+def _parse_column_major(block: str, month: str) -> dict:
+    """Other layout: all row labels first, then a column of share values, then
+    RPK, ASK, PLF(pp) and PLF(level) columns. The value columns include the
+    industry total (one more entry than the share column, where the total's
+    100.0 is inline). World regions are always Africa, Asia Pacific, Europe,
+    Latin America, Middle East, North America — so values map by position."""
+    i_note = block.find("Note 1")
+    if i_note == -1:
+        raise ValueError("column-major: 'Note 1' not found")
+    # The note itself reads "% of industry RPK in <year>", so start the column
+    # scan only after that line to avoid matching its embedded "RPK".
+    nm = re.match(r"Note 1[^\n]*?20\d{2}", block[i_note:])
+    start = i_note + (nm.end() if nm else len("Note 1"))
+    i_rpk = block.find("RPK", start)
+    i_ask = block.find("ASK", i_rpk) if i_rpk != -1 else -1
+    i_pp = block.find("PLF (%-pt)", i_ask) if i_ask != -1 else -1
+    i_lvl = block.find("PLF (level)", i_ask) if i_ask != -1 else -1
+    if min(i_rpk, i_ask, i_pp, i_lvl) < 0:
+        raise ValueError("column-major markers not found")
+    share = _floats(block[start:i_rpk])
+    rpk = _floats(block[i_rpk:i_ask])
+    ask = _floats(block[i_ask:i_pp])
+    after_lvl = block[i_lvl + len("PLF (level)"):]
+    n2 = after_lvl.find("Note 2")
+    plf_all = _floats(after_lvl[:n2] if n2 != -1 else after_lvl)
+    if len(share) < 6 or len(rpk) < 7 or len(ask) < 7 or len(plf_all) < 14 or len(plf_all) % 2:
+        raise ValueError("column-major: unexpected value counts")
+    plf_lvl = plf_all[len(plf_all) // 2:]                 # 2nd half = PLF level
+    if any(not (40 < x < 100) for x in plf_lvl[:7]):
+        raise ValueError("column-major: PLF split looks wrong")
+    industry = {"share": 100.0, "rpk": rpk[0], "ask": ask[0], "plf": plf_lvl[0], "plf_pp": plf_all[0]}
+    regions = {key: {"share": share[k], "rpk": rpk[k + 1], "ask": ask[k + 1],
+                     "plf": plf_lvl[k + 1], "plf_pp": plf_all[k + 1]}
+               for k, key in enumerate(WORLD_ORDER)}
+    intl_rpk = rpk[7] if len(share) > 6 and 55 < share[6] < 68 and len(rpk) > 7 else None
+    dom_rpk = rpk[14] if len(share) > 13 and 30 < share[13] < 45 and len(rpk) > 14 else None
+    return _finalise({"month": month, "industry": industry, "regions": regions,
+                      "international_rpk": intl_rpk, "domestic_rpk": dom_rpk})
 
 
 def parse_detail(text: str) -> dict:
@@ -100,48 +178,14 @@ def parse_detail(text: str) -> dict:
     if idx == -1:
         raise ValueError("Could not find the 'Air passenger market in detail' table.")
     block = text[idx:]
-
     mm = re.search(r"Air passenger market in detail\s*-\s*([A-Za-z]+)\s+(\d{4})", block)
     if not mm or mm.group(1) not in MONTHNUM:
         raise ValueError("Could not read the report month from the table header.")
     month = "%04d-%02d" % (int(mm.group(2)), MONTHNUM[mm.group(1)])
-
-    t0 = block.find("TOTAL MARKET")
-    t_intl = block.find("International", t0)
-    if t0 == -1 or t_intl == -1:
-        raise ValueError("Table layout not recognised (TOTAL MARKET / International).")
-    world = block[t0:t_intl]                      # total + 6 regions (YoY columns)
-
-    industry, regions = None, {}
-    for pat, key in REGION_PATTERNS:
-        row = _row(world, pat)
-        if row is None:
-            continue
-        share, rpk, ask, plf_pp, plf = row
-        rec = {"share": share, "rpk": rpk, "ask": ask, "plf": plf, "plf_pp": plf_pp}
-        if key == "Industry":
-            industry = rec
-        else:
-            regions[key] = rec
-
-    if industry is None or len(regions) != 6:
-        raise ValueError("Parsed %d/6 regions + industry=%s — unsupported table layout."
-                         % (len(regions), industry is not None))
-
-    intl = _row(block[t_intl:], "International")
-    dom_idx = block.find("Domestic", t_intl)
-    dom = _row(block[dom_idx:], "Domestic") if dom_idx != -1 else None
-
-    rec = {
-        "month": month,
-        "industry": industry,
-        "regions": regions,
-        "international_rpk": intl[1] if intl else None,
-        "domestic_rpk": dom[1] if dom else None,
-    }
-    if not _sane(rec):
-        raise ValueError("Parsed figures for %s failed the sanity check (likely a mis-read layout)." % month)
-    return rec
+    try:
+        return _parse_row_major(block, month)
+    except ValueError:
+        return _parse_column_major(block, month)
 
 
 # ---------------------------------------------------------------------------
