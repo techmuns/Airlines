@@ -180,6 +180,14 @@ table.data .strong { font-weight: 600; color: var(--text); }
 }
 .cal__cell.has-holiday .cal__val { bottom: 12px; }
 
+/* Calendar <-> daily-table link: clickable day, gold selected ring, row highlight */
+.cal__cell.is-pick { cursor: pointer; transition: box-shadow .15s ease; }
+.cal__cell.is-pick:hover { box-shadow: inset 0 0 0 1px rgba(216, 177, 95, .45); }
+.cal__cell.is-selected { box-shadow: inset 0 0 0 2px var(--gold); }
+table.data tbody tr.is-picked > td { background: rgba(216, 177, 95, .14); }
+table.data tbody tr.is-picked > td.date { box-shadow: inset 3px 0 0 var(--gold); }
+table.data tbody tr.is-picked.is-sample { opacity: 1; }
+
 /* --------------------------------------------------------------------------
    Heatmap tables (regional snapshot + detailed matrix)
    -------------------------------------------------------------------------- */

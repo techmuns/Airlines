@@ -48,7 +48,7 @@
   /* --- TSA calendar heatmap --- */
   // ctx: { byDate, dates(sorted asc) }
   function buildCalendar(ctx) {
-    var byDate = ctx.byDate, dates = ctx.dates;
+    var byDate = ctx.byDate, dates = ctx.dates, onPick = ctx.onPick, selIso = null;
     var minKey = dates[0].slice(0, 7), maxKey = dates[dates.length - 1].slice(0, 7);
 
     // trailing 28-day average for each date (relative strength baseline)
@@ -110,8 +110,19 @@
         var iso = keyOf(cur.y, cur.m) + '-' + String(dayNum).padStart(2, '0');
         cell.appendChild(el('div', { class: 'cal__day', text: String(dayNum) }));
         if (byDate[iso]) {
-          cell.classList.add('lvl-' + level(iso));
+          cell.classList.add('lvl-' + level(iso), 'is-pick');
           cell.appendChild(el('div', { class: 'cal__val', text: U.fmtMillions(byDate[iso].throughput, 2) }));
+          if (iso === selIso) cell.classList.add('is-selected');
+          // click a day -> jump to & highlight its row in the daily table
+          (function (cIso, cEl) {
+            cEl.addEventListener('click', function () {
+              selIso = cIso;
+              var prev = grid.querySelector('.cal__cell.is-selected');
+              if (prev) prev.classList.remove('is-selected');
+              cEl.classList.add('is-selected');
+              if (onPick) onPick(cIso);
+            });
+          })(iso, cell);
         }
         if (holidays[dayNum]) {
           cell.classList.add('has-holiday');

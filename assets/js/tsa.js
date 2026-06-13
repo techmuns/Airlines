@@ -119,7 +119,7 @@
     days.slice().reverse().forEach(function (d) {
       function pctCell(v) { return el('td', { class: 'pct ' + U.signClass(v), text: U.fmtPct(v) }); }
       var isReal = !!REAL[d.date];
-      tbody.appendChild(el('tr', { class: isReal ? 'is-real' : 'is-sample',
+      tbody.appendChild(el('tr', { class: isReal ? 'is-real' : 'is-sample', 'data-date': d.date,
         title: isReal ? 'Real TSA figure' : 'Sample data' }, [
         el('td', { class: 'date' }, [
           el('span', { class: 'tsa-src-dot ' + (isReal ? 'is-real' : 'is-sample') }),
@@ -132,18 +132,31 @@
         el('td', { class: 'num', text: isoWeek(d.date) })
       ]));
     });
+    var tableScroll = el('div', { class: 'table-scroll' }, [
+      el('table', { class: 'data' }, [el('thead', {}, [head]), tbody])
+    ]);
     var tableCard = el('div', { class: 'card' }, [
       el('div', { class: 'section-head' }, [
         el('div', { class: 'section-head__title' }, [el('span', { class: 'ico', html: I.bars }), 'TSA Checkpoint Travel Numbers (Daily)'])
       ]),
-      el('div', { class: 'table-scroll' }, [
-        el('table', { class: 'data' }, [el('thead', {}, [head]), tbody])
-      ]),
+      tableScroll,
       el('div', { class: 'table-foot' }, [
         el('span', {}, [el('b', { text: 'Source: ' }), 'TSA.gov']),
         el('span', { text: 'Note: Holiday weeks may be delayed. Data is for checkpoint travel only.' })
       ])
     ]);
+
+    // Calendar -> table link: scroll the daily table to a date and highlight it.
+    function pickDate(iso) {
+      var row = tbody.querySelector('tr[data-date="' + iso + '"]');
+      if (!row) return;
+      var prev = tbody.querySelector('tr.is-picked');
+      if (prev) prev.classList.remove('is-picked');
+      row.classList.add('is-picked');
+      var rRect = row.getBoundingClientRect(), sRect = tableScroll.getBoundingClientRect();
+      var delta = (rRect.top - sRect.top) - (tableScroll.clientHeight - row.offsetHeight) / 2;
+      tableScroll.scrollTo({ top: tableScroll.scrollTop + delta, behavior: 'smooth' });
+    }
 
     /* ---- D. Calendar heatmap ---- */
     var legend = el('div', { class: 'legend' }, [
@@ -156,7 +169,7 @@
         el('div', { class: 'section-head__title' }, [el('span', { class: 'ico', html: I.calendar }), 'TSA Passenger Traffic Heatmap (Daily)']),
         legend
       ]),
-      HM.buildCalendar({ byDate: data.byDate, dates: days.map(function (d) { return d.date; }) })
+      HM.buildCalendar({ byDate: data.byDate, dates: days.map(function (d) { return d.date; }), onPick: pickDate })
     ]);
 
     var split = el('div', { class: 'grid tsa-split' }, [tableCard, calCard]);
