@@ -241,9 +241,9 @@
     function staticMarkup() {
       var defs = '<defs>' +
         '<radialGradient id="gdmBg" cx="50%" cy="-4%" r="138%">' +
-          '<stop offset="0%" stop-color="#0c1c37"/>' +
-          '<stop offset="52%" stop-color="#081123"/>' +
-          '<stop offset="100%" stop-color="#03050b"/>' +
+          '<stop offset="0%" stop-color="#102338"/>' +
+          '<stop offset="52%" stop-color="#0a1626"/>' +
+          '<stop offset="100%" stop-color="#050b14"/>' +
         '</radialGradient>' +
         '<radialGradient id="gdmCore">' +
           '<stop offset="0%" stop-color="#f6eed8"/>' +
@@ -525,9 +525,9 @@
         data: {
           labels: rangeSlice(monthLabels),
           datasets: [
-            line('RPK YoY %', rangeSlice(d.rpk.series), '#f0cd7c', 'rgba(240,205,124,.32)', 'y'),      // bright gold
-            line('ASK YoY %', rangeSlice(d.ask.series), '#7ba7da', 'rgba(123,167,218,.28)', 'y'),      // soft blue
-            line('PLF %', rangeSlice(d.plf.series), 'rgba(234,240,250,.85)', 'rgba(234,240,250,.22)', 'y1')  // light
+            line('RPK YoY %', rangeSlice(d.rpk.series), '#e6c978', 'rgba(230,201,120,.30)', 'y'),      // champagne gold (headline)
+            line('ASK YoY %', rangeSlice(d.ask.series), '#6fa8dc', 'rgba(111,168,220,.26)', 'y'),      // soft blue
+            line('PLF %', rangeSlice(d.plf.series), 'rgba(244,247,251,.85)', 'rgba(244,247,251,.20)', 'y1')  // light
           ]
         },
         options: {
@@ -537,11 +537,11 @@
           interaction: { mode: 'index', intersect: false },
           plugins: {
             legend: { display: true, position: 'bottom',
-              labels: { boxWidth: 11, boxHeight: 11, padding: 15, color: '#9fadc9',
+              labels: { boxWidth: 11, boxHeight: 11, padding: 15, color: '#9fb0c7',
                 font: { size: 11, weight: '600' }, usePointStyle: true, pointStyle: 'line' } },
             tooltip: {
-              backgroundColor: '#0d2147', titleColor: '#fff', bodyColor: '#dbe4f3',
-              borderColor: 'rgba(217,179,106,.4)', borderWidth: 1, padding: 10, cornerRadius: 8,
+              backgroundColor: '#0d2147', titleColor: '#fff', bodyColor: '#eaf0fb',
+              borderColor: 'rgba(216,177,95,.32)', borderWidth: 1, padding: 10, cornerRadius: 8,
               titleFont: { weight: '700', size: 12 }, bodyFont: { size: 12 },
               callbacks: { label: function (c) {
                 if (c.raw == null) return c.dataset.label + ': —';
@@ -552,15 +552,15 @@
             }
           },
           scales: {
-            x: { grid: { display: false, drawTicks: false }, border: { color: 'rgba(141,163,205,.25)' },
-                 ticks: { color: '#8093b4', maxRotation: 0, autoSkip: true, maxTicksLimit: 9, font: { size: 10 } } },
-            y: { position: 'left', grid: { color: 'rgba(141,163,205,.13)', drawTicks: false }, border: { display: false },
-                 ticks: { color: '#8093b4', font: { size: 10 }, padding: 6, maxTicksLimit: 6, callback: pctY },
-                 title: { display: true, text: 'YoY %', color: '#8fa1c0', font: { size: 10, weight: '600' } },
+            x: { grid: { display: false, drawTicks: false }, border: { color: 'rgba(180,200,225,.18)' },
+                 ticks: { color: '#9fb0c7', maxRotation: 0, autoSkip: true, maxTicksLimit: 9, font: { size: 10 } } },
+            y: { position: 'left', grid: { color: 'rgba(180,200,225,.12)', drawTicks: false }, border: { display: false },
+                 ticks: { color: '#9fb0c7', font: { size: 10 }, padding: 6, maxTicksLimit: 6, callback: pctY },
+                 title: { display: true, text: 'YoY %', color: '#9fb0c7', font: { size: 10, weight: '600' } },
                  suggestedMin: -6, suggestedMax: 16 },
             y1: { position: 'right', grid: { display: false }, border: { display: false },
-                  ticks: { color: '#cdb377', font: { size: 10 }, padding: 6, maxTicksLimit: 6, callback: pctY },
-                  title: { display: true, text: 'PLF %', color: '#cdb377', font: { size: 10, weight: '600' } },
+                  ticks: { color: '#9fb0c7', font: { size: 10 }, padding: 6, maxTicksLimit: 6, callback: pctY },
+                  title: { display: true, text: 'PLF %', color: '#9fb0c7', font: { size: 10, weight: '600' } },
                   suggestedMin: 60, suggestedMax: 95 }
           }
         }

@@ -22,8 +22,8 @@
 .kpi__tile {
   width: 36px; height: 36px; flex: none;
   border-radius: 9px;
-  background: linear-gradient(150deg, #1c2f58, #10203f);
-  border: 1px solid rgba(217, 179, 106, .25);
+  background: linear-gradient(150deg, #1b3458, #101f33);
+  border: 1px solid rgba(216, 177, 95, .22);
   color: var(--gold-soft);
   display: grid; place-items: center;
   box-shadow: var(--shadow-sm);
@@ -34,7 +34,7 @@
   text-transform: uppercase; color: var(--text-muted);
 }
 .kpi__value {
-  font-size: 21px; font-weight: 600; color: #eef2fa;
+  font-size: 21px; font-weight: 600; color: var(--text);
   line-height: 1.12; margin-top: 4px; letter-spacing: -.2px;
 }
 .kpi__value.pos { color: var(--pos); }
@@ -60,7 +60,7 @@
   margin-top: 9px;
   height: 210px;
   background: var(--card-2);
-  border: 1px solid rgba(141, 163, 205, .14);
+  border: 1px solid rgba(148, 174, 210, .14);
   border-radius: 9px;
 }
 .chart-card__canvas.tall { height: 234px; }
@@ -92,7 +92,7 @@ table.data { font-size: 11.5px; }
 table.data thead th {
   position: sticky; top: 0; z-index: 1;
   background: var(--tint);
-  color: #8fa1c0;
+  color: var(--text-muted);
   font-size: 9.5px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase;
   text-align: right;
   padding: 9px 14px;
@@ -109,8 +109,8 @@ table.data tbody td {
 }
 table.data tbody tr:nth-child(even) { background: rgba(255, 255, 255, .022); }
 table.data tbody tr:hover { background: rgba(123, 167, 218, .10); }
-table.data .date { font-weight: 500; color: #c7d2e8; }
-table.data .strong { font-weight: 600; color: #eef2fa; }
+table.data .date { font-weight: 500; color: var(--on-navy-soft); }
+table.data .strong { font-weight: 600; color: var(--text); }
 .pct.pos { color: var(--pos); font-weight: 500; }
 .pct.neg { color: var(--neg); font-weight: 500; }
 .muted-cell { color: var(--text-faint); }
@@ -138,7 +138,7 @@ table.data .strong { font-weight: 600; color: #eef2fa; }
 .cal__btn svg { width: 16px; height: 16px; }
 .cal__month {
   min-width: 144px; text-align: center;
-  font-weight: 600; font-size: 13px; color: #eef2fa;
+  font-weight: 600; font-size: 13px; color: var(--text);
   border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px;
   background: var(--frost);
 }
@@ -163,7 +163,7 @@ table.data .strong { font-weight: 600; color: #eef2fa; }
 .cal__day { font-size: 10px; font-weight: 600; color: var(--hm-ink); opacity: .72; }
 .cal__cell.is-out .cal__day { color: var(--text-faint); opacity: .5; }
 .cal__val {
-  font-size: 12px; font-weight: 600; color: #eef2fa;
+  font-size: 12px; font-weight: 600; color: var(--text);
   font-variant-numeric: tabular-nums;
   position: absolute; left: 0; right: 0; bottom: 6px; text-align: center;
 }
@@ -185,14 +185,14 @@ table.hm { font-size: 11.5px; }
 table.hm th, table.hm td { border: 1px solid rgba(141, 163, 205, .14); }
 
 table.hm thead .grp th {
-  background: #101d36; color: var(--gold-bright);
+  background: #101f33; color: var(--text);
   font-size: 10.5px; font-weight: 600; letter-spacing: .4px;
   text-transform: uppercase; padding: 8px 11px; text-align: center;
-  border-color: rgba(141, 163, 205, .18);
+  border-color: rgba(148, 174, 210, .18);
 }
-table.hm thead .grp th.spacer { background: #0d1830; }
+table.hm thead .grp th.spacer { background: #0b1728; }
 table.hm thead .sub th {
-  background: var(--tint); color: #8fa1c0;
+  background: var(--tint); color: var(--text-muted);
   font-size: 9.5px; font-weight: 600; letter-spacing: .3px;
   text-transform: uppercase; padding: 6px 10px; text-align: center;
   white-space: nowrap;
@@ -200,7 +200,7 @@ table.hm thead .sub th {
 table.hm thead .sub th.rowlab,
 table.hm tbody td.rowlab { text-align: left; white-space: nowrap; background: var(--tint); }
 table.hm tbody td.rowlab {
-  font-weight: 600; color: #ccd7ec; background: var(--frost);
+  font-weight: 600; color: var(--on-navy-soft); background: var(--frost);
   padding: 8px 11px;
 }
 table.hm tbody td.rowlab .ico {
@@ -234,13 +234,13 @@ table.hm tbody tr.is-industry td.val { box-shadow: inset 0 0 0 9999px rgba(123, 
 .insight { display: flex; gap: 13px; padding: 16px 18px; align-items: flex-start; }
 .insight__icon {
   width: 36px; height: 36px; flex: none; border-radius: 50%;
-  background: linear-gradient(150deg, #1c2f58, #10203f);
-  border: 1px solid rgba(217, 179, 106, .25);
+  background: linear-gradient(150deg, #1b3458, #101f33);
+  border: 1px solid rgba(216, 177, 95, .22);
   color: var(--gold-soft); display: grid; place-items: center;
   box-shadow: var(--shadow-sm);
 }
 .insight__icon svg { width: 18px; height: 18px; }
-.insight__title { font-size: 13px; font-weight: 600; color: #f0e6cd; margin-bottom: 4px; }
+.insight__title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
 .insight__body { font-size: 12px; font-weight: 400; color: var(--text-muted); line-height: 1.5; }
 .insight__body b { color: var(--text); font-weight: 600; }
 
@@ -252,7 +252,7 @@ table.hm tbody tr.is-industry td.val { box-shadow: inset 0 0 0 9999px rgba(123, 
   padding: 2px 8px; border-radius: 999px; margin-right: 6px;
 }
 .tsa-src-badge.is-real { background: rgba(64, 168, 118, .18); color: #79d3a4; border: 1px solid rgba(64, 168, 118, .4); }
-.tsa-src-badge.is-sample { background: rgba(201, 168, 92, .16); color: #d9c389; border: 1px solid rgba(201, 168, 92, .4); }
+.tsa-src-badge.is-sample { background: rgba(216, 177, 95, .16); color: #e6c978; border: 1px solid rgba(216, 177, 95, .4); }
 .tsa-src-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
 .tsa-src-dot.is-real { background: #5fbf8a; }
 .tsa-src-dot.is-sample { background: rgba(159, 173, 201, .4); }

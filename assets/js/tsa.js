@@ -196,13 +196,13 @@
       // Exhibit: same, 7DMA basis (daily line)
       CH.lineChart(c2.canvas, dmaYoY.map(function (d) { return d.date; }),
         dmaYoY.map(function (d) { return d.value; }), {
-        color: CH.INK.navy, width: 1.9, yCallback: pctY, yTitle: 'YoY %', xCallback: monthX,
+        color: CH.INK.blue, width: 1.9, yCallback: pctY, yTitle: 'YoY %', xCallback: monthX,
         tooltip: { title: dayTitle, label: function (c) { return c.raw == null ? '—' : c.raw.toFixed(1) + '%'; } }
       });
 
       CH.lineChart(c3.canvas, days.map(function (d) { return d.date; }),
         days.map(function (d) { return d.sevenDMA; }), {
-        color: CH.INK.navy, fill: true, width: 2.2, yMin: 0,
+        color: CH.INK.blue, fill: true, width: 2.2, yMin: 0,
         yCallback: milY, yTitle: 'Millions', xCallback: monthX,
         tooltip: { title: dayTitle, label: function (c) { return U.fmtInt(c.raw); } } });
 

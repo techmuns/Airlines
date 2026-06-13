@@ -6,14 +6,14 @@
   var Chart = global.Chart;
   var FONT = '"Inter", "Segoe UI", system-ui, sans-serif';
 
-  /* dark-theme ink: gold primary series, soft blue secondary, light axes */
+  /* dark-theme ink: champagne gold for bars, soft blue for lines, light axes */
   var INK = {
-    navy: '#d9b36a',                    // primary series (muted gold)
-    navySoft: '#c9a85c',
-    blue: '#7ba7da',                    // secondary series (soft blue)
-    grid: 'rgba(141,163,205,.13)',
-    axis: '#8fa1c0',
-    tick: '#8093b4'
+    navy: '#d8b15f',                    // primary BAR series (champagne gold)
+    navySoft: '#a98742',                // muted gold (deep accent)
+    blue: '#6fa8dc',                    // LINE / moving-average series (soft blue)
+    grid: 'rgba(180,200,225,.12)',      // subtle gridlines
+    axis: '#9fb0c7',
+    tick: '#9fb0c7'
   };
 
   if (Chart) {
@@ -125,11 +125,11 @@
       type: 'line',
       data: { labels: labels, datasets: [{
         data: data,
-        borderColor: o.color || INK.navy,
-        backgroundColor: o.fill ? 'rgba(217,179,106,.10)' : 'transparent',
+        borderColor: o.color || INK.blue,
+        backgroundColor: o.fill ? (o.fillColor || 'rgba(111,168,220,.12)') : 'transparent',
         fill: !!o.fill,
         borderWidth: o.width || 2.0,
-        pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: o.color || INK.navy,
+        pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: o.color || INK.blue,
         tension: o.tension == null ? 0.25 : o.tension,
         spanGaps: true
       }]},
