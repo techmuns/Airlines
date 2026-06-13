@@ -13,6 +13,10 @@ on:
         description: "Set to 'yes' to print the page structure without writing"
         required: false
         default: ""
+      backfill:
+        description: "Optional: space-separated YYYYMMDD archive dates to seed history"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -37,8 +41,12 @@ jobs:
         if: ${{ github.event.inputs.diagnose != '' }}
         run: python tools/tsa_etl.py --diagnose
 
+      - name: Back-fill TSA history from the Internet Archive
+        if: ${{ github.event.inputs.diagnose == '' && github.event.inputs.backfill != '' }}
+        run: python tools/tsa_etl.py --backfill "${{ github.event.inputs.backfill }}"
+
       - name: Fetch & update TSA data
-        if: ${{ github.event.inputs.diagnose == '' }}
+        if: ${{ github.event.inputs.diagnose == '' && github.event.inputs.backfill == '' }}
         run: python tools/tsa_etl.py || echo "::warning::TSA update produced no change (page unreachable or layout changed)."
 
       - name: Commit if data changed

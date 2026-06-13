@@ -75,10 +75,30 @@ def extract_rows(html: str):
 
 
 def parse_daily(html: str) -> dict:
-    """Return {YYYY-MM-DD: throughput}. The table has a year header row and then
-    date rows whose columns are that date's throughput in each year."""
+    """Return {YYYY-MM-DD: throughput}. The current TSA table is simply
+    'Date | Numbers' with rows like '6/11/2026 | 2,809,243'. A multi-year
+    layout (a year-header row with per-year columns) is handled as a fallback."""
     rows = extract_rows(html)
-    daily, year_cols = {}, None
+    daily = {}
+    for row in rows:
+        if not row:
+            continue
+        m = re.fullmatch(r"\s*(\d{1,2})/(\d{1,2})/(\d{4})\s*", row[0])
+        if not m:
+            continue
+        for cell in row[1:]:
+            digits = re.sub(r"[^\d]", "", cell)
+            if digits:
+                try:
+                    daily[_dt.date(int(m.group(3)), int(m.group(1)), int(m.group(2))).isoformat()] = int(digits)
+                except ValueError:
+                    pass
+                break
+    if daily:
+        return daily
+
+    # fallback: year-header row + date rows with one column per year
+    year_cols = None
     for row in rows:
         years = [(i, int(c)) for i, c in enumerate(row) if re.fullmatch(r"20\d{2}", c.strip())]
         if len(years) >= 2:
@@ -99,6 +119,13 @@ def parse_daily(html: str) -> dict:
                     except ValueError:
                         pass
     return daily
+
+
+def fetch_archive(date_yyyymmdd: str) -> str:
+    """Fetch the TSA page as archived by the Internet Archive on/near a date.
+    The 'id_' modifier returns the original page (no Wayback toolbar)."""
+    url = "https://web.archive.org/web/%sid_/%s" % (date_yyyymmdd, URL)
+    return fetch_html(url, timeout=60)
 
 
 # ---------------------------------------------------------------------------
@@ -175,8 +202,36 @@ def update_tsa(daily: dict, path: str = TSA_PATH):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="TSA passenger-volume ETL")
     ap.add_argument("--diagnose", action="store_true", help="print the page table structure and exit")
+    ap.add_argument("--backfill", default="",
+                    help="space-separated YYYYMMDD Internet-Archive snapshot dates to seed history")
     ap.add_argument("--url", default=URL)
     args = ap.parse_args(argv)
+
+    if args.backfill:
+        combined = {}
+        for ts in args.backfill.split():
+            try:
+                dd = parse_daily(fetch_archive(ts))
+                print("  archive %s -> %d days" % (ts, len(dd)))
+                combined.update(dd)
+            except Exception as e:  # noqa: BLE001
+                print("  archive %s failed: %s" % (ts, str(e).splitlines()[0]))
+        try:
+            live = parse_daily(fetch_html())
+            print("  live -> %d days" % len(live))
+            combined.update(live)
+        except Exception as e:  # noqa: BLE001
+            print("  live fetch failed:", e)
+        if not combined:
+            print("ERROR: backfill produced no data.", file=sys.stderr)
+            return 1
+        data, changed, _ = update_tsa(combined)
+        ds = sorted(combined)
+        print("backfill parsed %d days (%s .. %s)" % (len(combined), ds[0], ds[-1]))
+        print(("Updated data/tsa.json — %d days, real days total %d"
+               % (len(data["days"]), len(data["_meta"]["real_days"]))) if changed else "No change.")
+        return 0
+
     try:
         html = fetch_html(args.url)
     except Exception as e:  # noqa: BLE001
