@@ -23,16 +23,25 @@
      dark red on negative dips (premium, low-saturation — never neon) */
   var DECK = { steel: '#6e94be', gold: '#d8b15f', red: '#8e4b4b' };
 
-  function barColors(data) {
-    var mx = -Infinity;
-    data.forEach(function (v) { if (v != null && v > mx) mx = v; });
+  /* Per-bar palette. `opts.round` maps a value to the precision shown on the
+     chart, so EVERY bar that displays the highest value is highlighted (ties
+     included) — gold is intentional, never one arbitrary float-max. Red is only
+     ever used for genuine negatives (so absolute-count charts never show red). */
+  function barColors(data, opts) {
+    var round = (opts && opts.round) || function (v) { return v; };
+    var mx = -Infinity, hasMax = false;
+    data.forEach(function (v) {
+      if (v != null && v > 0) { var r = round(v); if (r > mx) { mx = r; hasMax = true; } }
+    });
     return data.map(function (v) {
       if (v == null) return DECK.steel;
-      if (v < 0) return DECK.red;                 // dip → muted dark red
-      if (v === mx && mx > 0) return DECK.gold;   // peak → champagne gold
-      return DECK.steel;                          // regular value → steel blue
+      if (v < 0) return DECK.red;                          // dip → muted dark red
+      if (hasMax && round(v) === mx) return DECK.gold;     // peak(s) → champagne gold
+      return DECK.steel;                                   // regular value → steel blue
     });
   }
+  var round1 = function (v) { return Math.round(v * 10) / 10; };          // 1-dp %, for YoY
+  var roundM1 = function (v) { return Math.round(v / 1e5) / 10; };        // millions, 1 dp, for counts
 
   if (Chart) {
     Chart.defaults.font.family = FONT;
@@ -179,6 +188,8 @@
     INK: INK,
     DECK: DECK,
     barColors: barColors,
+    round1: round1,
+    roundM1: roundM1,
     barChart: barChart,
     lineChart: lineChart,
     groupedBarChart: groupedBarChart

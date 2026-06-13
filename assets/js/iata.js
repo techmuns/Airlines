@@ -185,7 +185,7 @@
       var pctY = function (v) { return v + '%'; };
 
       CH.barChart(h1.canvas, monthLabels, indRpk.map(function (v) { return v; }), {
-        color: CH.barColors(indRpk), yMin: 0, yMax: 25, yCallback: pctY, yTitle: 'YoY, %', maxBar: 22,
+        color: CH.barColors(indRpk, { round: CH.round1 }), yMin: 0, yMax: 25, yCallback: pctY, yTitle: 'YoY, %', maxBar: 22,
         barLabels: { display: true, size: 8.5, color: CH.INK.label, formatter: function (v) { return v.toFixed(1); } },
         tooltip: { label: function (c) { return c.raw.toFixed(1) + '%'; } }
       });
