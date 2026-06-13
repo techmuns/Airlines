@@ -217,7 +217,8 @@
       ]),
       el('div', { class: 'chart-card__canvas gdm-trend__canvas' }, [trendCanvas]),
       el('div', { class: 'gdm-srcnote' }, [
-        el('span', { class: 'gdm-srcnote__item' }, [el('span', { class: 'gdm-srcnote__dot is-real' }), 'dots = real IATA data']),
+        el('span', { class: 'gdm-srcnote__badge' }, [realCount + ' of ' + months.length + ' months are real IATA data']),
+        el('span', { class: 'gdm-srcnote__item' }, [el('span', { class: 'gdm-srcnote__dot is-real' }), 'dots = real']),
         el('span', { class: 'gdm-srcnote__item' }, [el('span', { class: 'gdm-srcnote__dash' }), 'dashed = sample (awaiting report)'])
       ])
     ]);
@@ -493,6 +494,7 @@
       refreshControlsState();
       renderBubbles();
       updateCaption();
+      applyTrendEmphasis();   // the Metric control also highlights the trend line
     }
     function refreshControlsState() {
       var isShare = state.metric === 'share';
@@ -523,13 +525,14 @@
         data: {
           labels: rangeSlice(monthLabels),
           datasets: [
-            line('RPK YoY %', rangeSlice(d.rpk.series), '#d9b36a', 'y'),            // gold
-            line('ASK YoY %', rangeSlice(d.ask.series), '#7ba7da', 'y'),            // soft blue
-            line('PLF %', rangeSlice(d.plf.series), 'rgba(234,240,250,.85)', 'y1')  // muted light
+            line('RPK YoY %', rangeSlice(d.rpk.series), '#d9b36a', 'rgba(217,179,106,.28)', 'y'),      // gold
+            line('ASK YoY %', rangeSlice(d.ask.series), '#7ba7da', 'rgba(123,167,218,.28)', 'y'),      // soft blue
+            line('PLF %', rangeSlice(d.plf.series), 'rgba(234,240,250,.85)', 'rgba(234,240,250,.22)', 'y1')  // light
           ]
         },
         options: {
           responsive: true, maintainAspectRatio: false,
+          animation: false,   // static: avoids a Chart.js segment-dash animation bug
           layout: { padding: { top: 14, right: 4, left: 2, bottom: 0 } },
           interaction: { mode: 'index', intersect: false },
           plugins: {
@@ -562,30 +565,45 @@
           }
         }
       });
+      applyTrendEmphasis();
     }
     function visMonths() { return rangeSlice(months); }
-    function pointRadii() { return visMonths().map(function (m) { return REAL[m] ? 2.6 : 0; }); }
+    function pointRadii(scale) { return visMonths().map(function (m) { return REAL[m] ? (scale || 1) * 3 : 0; }); }
     // real months are drawn solid with a dot; sample months get a dashed segment
     function dashSeg(ctx) {
       var vm = visMonths();
       return (REAL[vm[ctx.p0DataIndex]] && REAL[vm[ctx.p1DataIndex]]) ? undefined : [4, 3];
     }
-    function line(label, data, color, axis) {
-      return { label: label, data: data, yAxisID: axis, borderColor: color, backgroundColor: color,
-        borderWidth: 2, pointRadius: pointRadii(), pointBackgroundColor: color,
-        pointHoverRadius: 4, pointHoverBackgroundColor: color,
+    var METRIC_LINE = { rpk: 0, ask: 1, plf: 2 };   // which trend line each metric maps to
+    function line(label, data, base, fade, axis) {
+      return { label: label, data: data, yAxisID: axis, _base: base, _fade: fade,
+        borderColor: base, backgroundColor: base,
+        borderWidth: 2, pointRadius: pointRadii(), pointBackgroundColor: base, pointBorderColor: base,
+        pointHoverRadius: 5, pointHoverBackgroundColor: base,
         segment: { borderDash: dashSeg }, tension: 0.3, spanGaps: true };
+    }
+    /* the Metric control highlights the matching line in the trend chart, so the
+       chart visibly responds to every selection (Market Share shows all three). */
+    function applyTrendEmphasis() {
+      if (!trendChart) return;
+      var sel = METRIC_LINE[state.metric];                 // undefined for share
+      trendChart.data.datasets.forEach(function (ds, i) {
+        var hot = sel == null || i === sel;
+        ds.borderColor = ds.pointBackgroundColor = ds.pointBorderColor = hot ? ds._base : ds._fade;
+        ds.borderWidth = (sel != null && i === sel) ? 3.4 : (sel == null ? 2 : 1.2);
+        ds.pointRadius = pointRadii(hot ? 1 : 0.6);
+      });
+      trendChart.update();
     }
     function updateTrend() {
       trendTitle.textContent = 'Regional Trend — ' + state.region;
       if (!trendChart) return;
-      var d = S[state.region], pr = pointRadii();
+      var d = S[state.region];
       trendChart.data.labels = rangeSlice(monthLabels);
       [d.rpk.series, d.ask.series, d.plf.series].forEach(function (s, i) {
         trendChart.data.datasets[i].data = rangeSlice(s);
-        trendChart.data.datasets[i].pointRadius = pr;
       });
-      trendChart.update();
+      applyTrendEmphasis();
     }
 
     /* ================= region selection ================= */

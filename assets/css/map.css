@@ -232,3 +232,10 @@ table.hm.gdm-snaptbl tbody td.val { min-width: 64px; }
   width: 16px; height: 0; border-top: 2px dashed rgba(159, 173, 201, .7);
   display: inline-block;
 }
+
+.gdm-srcnote__badge {
+  font-size: 9.5px; font-weight: 600; letter-spacing: .2px;
+  color: #79d3a4; background: rgba(64, 168, 118, .14);
+  border: 1px solid rgba(64, 168, 118, .34); border-radius: 999px;
+  padding: 2px 9px;
+}
