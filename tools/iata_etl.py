@@ -96,10 +96,14 @@ def _floats(text: str):
 def _finalise(rec: dict) -> dict:
     """Sanity + a strong correctness check: the industry RPK must equal the
     share-weighted average of the six regional RPKs. A mis-read layout scrambles
-    the region<->value mapping and fails this, so we never publish wrong data."""
+    the region<->value mapping and fails this, so we never publish wrong data.
+
+    The YoY band is deliberately tight (-40..60%): outside a COVID-scale shock,
+    no IATA region moves that far month-on-month, so a value beyond it means a
+    mis-parse or placeholder, not real data — reject rather than publish it."""
     for v in rec["regions"].values():
         if not (0 < v["share"] <= 100 and 40 < v["plf"] < 100
-                and -100 < v["rpk"] < 100 and -100 < v["ask"] < 100):
+                and -40 < v["rpk"] < 60 and -40 < v["ask"] < 60):
             raise ValueError("%s: figures out of sane range." % rec["month"])
     ws = sum(rec["regions"][k]["share"] for k in WORLD_ORDER)
     wr = sum(rec["regions"][k]["share"] * rec["regions"][k]["rpk"] for k in WORLD_ORDER) / ws
