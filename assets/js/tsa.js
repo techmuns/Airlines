@@ -92,8 +92,13 @@
     ]);
 
     /* ---- B. Charts (prepare data; instantiate lazily) ---- */
-    var monthly = C.monthlyAverages(days);
-    var ym = raw.yoy_monthly;            // published monthly YoY series (exhibit)
+    // Monthly BAR exhibits show a trailing window so the per-bar value labels
+    // stay legible; the full daily history still powers the line charts and is
+    // the year-on-year baseline. ~30 months ≈ the client's Jan-2024-on range.
+    var BAR_MONTHS = 30;
+    var monthly = C.monthlyAverages(days).slice(-BAR_MONTHS);
+    var ymAll = raw.yoy_monthly;         // published monthly YoY series (exhibit)
+    var ym = { months: ymAll.months.slice(-BAR_MONTHS), values: ymAll.values.slice(-BAR_MONTHS) };
     var dmaYoY = raw.yoy_7dma_daily;     // 7DMA-basis YoY series (exhibit)
 
     var c1 = chartCard('TSA Passenger Throughput, YoY %',
