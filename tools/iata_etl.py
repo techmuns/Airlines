@@ -34,16 +34,17 @@ import urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_PATH = os.path.join(ROOT, "data", "data.json")
 
-# IATA report region label  ->  dashboard region key
-NAME_MAP = {
-    "TOTAL MARKET": "Industry",
-    "Africa": "Africa",
-    "Asia Pacific": "Asia/Pacific",
-    "Europe": "Europe",
-    "Latin America and Caribbean": "Latin America",
-    "Middle East": "Middle East",
-    "North America": "North America",
-}
+# IATA report region label (regex) -> dashboard region key. Reports vary: some
+# use "Latin America and Caribbean", others "Latin America".
+REGION_PATTERNS = [
+    (r"TOTAL MARKET", "Industry"),
+    (r"Africa", "Africa"),
+    (r"Asia Pacific", "Asia/Pacific"),
+    (r"Europe", "Europe"),
+    (r"Latin America(?:\s+and\s+Caribbean)?", "Latin America"),
+    (r"Middle East", "Middle East"),
+    (r"North America", "North America"),
+]
 MONTHNUM = {m: i + 1 for i, m in enumerate(
     ["January", "February", "March", "April", "May", "June",
      "July", "August", "September", "October", "November", "December"])}
@@ -55,7 +56,10 @@ _BROWSER_HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
-NUM = r"(-?\d+(?:\.\d+)?)"
+# A single number, optionally %-suffixed. Handles both report styles:
+#   "100.0 -3.4 -2.9"      (space-separated, no %)
+#   "100.0%2.6%3.4%"       (%-suffixed, no spaces)
+NUM = r"(-?\d+(?:\.\d+)?)%?"
 
 
 # ---------------------------------------------------------------------------
@@ -69,11 +73,25 @@ def extract_text(pdf_path: str) -> str:
 # ---------------------------------------------------------------------------
 # Parse the "Air passenger market in detail" table
 # ---------------------------------------------------------------------------
-def _row(text: str, label: str):
-    """Find `label` followed by 5 numbers: share, RPK, ASK, PLF(pp), PLF(level)."""
-    pat = re.escape(label) + r"\s+" + r"\s+".join([NUM] * 5)
+def _row(text: str, label_pat: str):
+    """Find `label_pat` immediately followed by 5 numbers:
+    share, RPK, ASK, PLF(pp), PLF(level). The numbers must directly follow the
+    label (only whitespace between), which makes the column-major layout — where
+    the labels and numbers are far apart — fail safely rather than mis-parse."""
+    pat = label_pat + r"\s*" + r"\s*".join([NUM] * 5)
     m = re.search(pat, text)
     return [float(x) for x in m.groups()] if m else None
+
+
+def _sane(rec: dict) -> bool:
+    for v in rec["regions"].values():
+        if not (0 < v["share"] <= 100):
+            return False
+        if not (40 < v["plf"] < 100):
+            return False
+        if not (-100 < v["rpk"] < 100 and -100 < v["ask"] < 100):
+            return False
+    return True
 
 
 def parse_detail(text: str) -> dict:
@@ -95,8 +113,8 @@ def parse_detail(text: str) -> dict:
     world = block[t0:t_intl]                      # total + 6 regions (YoY columns)
 
     industry, regions = None, {}
-    for label, key in NAME_MAP.items():
-        row = _row(world, label)
+    for pat, key in REGION_PATTERNS:
+        row = _row(world, pat)
         if row is None:
             continue
         share, rpk, ask, plf_pp, plf = row
@@ -107,20 +125,23 @@ def parse_detail(text: str) -> dict:
             regions[key] = rec
 
     if industry is None or len(regions) != 6:
-        raise ValueError("Parsed %d/6 regions + industry=%s — table format may have changed."
+        raise ValueError("Parsed %d/6 regions + industry=%s — unsupported table layout."
                          % (len(regions), industry is not None))
 
     intl = _row(block[t_intl:], "International")
     dom_idx = block.find("Domestic", t_intl)
     dom = _row(block[dom_idx:], "Domestic") if dom_idx != -1 else None
 
-    return {
+    rec = {
         "month": month,
         "industry": industry,
         "regions": regions,
         "international_rpk": intl[1] if intl else None,
         "domestic_rpk": dom[1] if dom else None,
     }
+    if not _sane(rec):
+        raise ValueError("Parsed figures for %s failed the sanity check (likely a mis-read layout)." % month)
+    return rec
 
 
 # ---------------------------------------------------------------------------
@@ -192,10 +213,12 @@ def update_data(rec: dict, path: str = DATA_PATH):
     data["global"]["domestic_rpk_yoy"][i] = rec["domestic_rpk"]
     data["global"]["international_rpk_yoy"][i] = rec["international_rpk"]
 
-    # latest known market shares (IATA: % of industry RPK in prior year)
-    data["market_share"] = {"Industry": 100.0}
-    for key, v in rec["regions"].items():
-        data["market_share"][key] = v["share"]
+    # market shares change year to year; only adopt them from the newest month
+    # so back-filling older months never overwrites the current shares.
+    if target == months[-1]:
+        data["market_share"] = {"Industry": 100.0}
+        for key, v in rec["regions"].items():
+            data["market_share"][key] = v["share"]
 
     meta = data["_meta"]
     real = set(meta.get("real_months", []))
