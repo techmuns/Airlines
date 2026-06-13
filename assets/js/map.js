@@ -495,8 +495,13 @@
       updateCaption();
     }
     function refreshControlsState() {
-      var viewActive = state.metric !== 'share' && state.period === 'month';
-      viewSeg.el.classList.toggle('is-disabled', !viewActive);
+      var isShare = state.metric === 'share';
+      // View (Latest / 3M / 12M) applies only to a time-series metric on a
+      // monthly basis — not to a static share, nor when the Year period is on.
+      viewSeg.el.classList.toggle('is-disabled', isShare || state.period === 'year');
+      // Period (Month / Year) applies only to time-series metrics; market share
+      // is a single static figure, so Month/Year is meaningless there.
+      periodSeg.el.classList.toggle('is-disabled', isShare);
     }
     function updateCaption() {
       var viewTxt = state.metric === 'share' ? 'Share of Global'
