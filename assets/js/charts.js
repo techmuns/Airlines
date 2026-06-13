@@ -6,11 +6,11 @@
   var Chart = global.Chart;
   var FONT = '"Inter", "Segoe UI", system-ui, sans-serif';
 
-  /* chart ink — IATA/research "deck" blues (navy primary, light-blue secondary)
-     tuned to read on the dark theme; value labels light for legibility */
+  /* chart ink — steel blue with gold peak highlight + muted red dips, tuned to
+     read on the dark theme; value labels light for legibility */
   var INK = {
-    navy: '#5b9bd5',                    // primary BAR series (deck blue)
-    navySoft: '#3f74b0',                // deeper blue accent
+    navy: '#6e94be',                    // default BAR series (steel blue)
+    navySoft: '#4f7099',                // deeper steel accent
     blue: '#6fa8dc',                    // LINE / moving-average series (medium blue)
     blueLight: '#a9cfee',               // secondary series, e.g. International (light blue)
     label: '#cfdaee',                   // value labels above bars (legible on dark)
@@ -18,6 +18,21 @@
     axis: '#9fb0c7',
     tick: '#9fb0c7'
   };
+
+  /* per-bar palette: steel blue default, champagne gold on the peak, muted
+     dark red on negative dips (premium, low-saturation — never neon) */
+  var DECK = { steel: '#6e94be', gold: '#d8b15f', red: '#8e4b4b' };
+
+  function barColors(data) {
+    var mx = -Infinity;
+    data.forEach(function (v) { if (v != null && v > mx) mx = v; });
+    return data.map(function (v) {
+      if (v == null) return DECK.steel;
+      if (v < 0) return DECK.red;                 // dip → muted dark red
+      if (v === mx && mx > 0) return DECK.gold;   // peak → champagne gold
+      return DECK.steel;                          // regular value → steel blue
+    });
+  }
 
   if (Chart) {
     Chart.defaults.font.family = FONT;
@@ -162,6 +177,8 @@
 
   global.ADM.charts = {
     INK: INK,
+    DECK: DECK,
+    barColors: barColors,
     barChart: barChart,
     lineChart: lineChart,
     groupedBarChart: groupedBarChart
