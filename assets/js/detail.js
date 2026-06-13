@@ -8,15 +8,11 @@
   'use strict';
   var U = global.ADM.util, el = U.el, HM = global.ADM.heatmap;
 
-  var VIEWS   = [['system', 'System'], ['international', 'International'], ['domestic', 'Domestic']];
-  var METRICS = [['rpk', 'RPK', 'Passenger traffic'],
-                 ['ask', 'ASK', 'Passenger capacity'],
-                 ['plf', 'PLF', 'Load factor']];
-  var BASES   = [['m', 'Monthly'], ['r', '3-mo avg']];
-  var RANGES  = [['12', '12m'], ['24', '24m'], ['36', '36m'], ['0', 'All']];
+  var VIEWS  = [['system', 'System'], ['international', 'International'], ['domestic', 'Domestic']];
+  var BASES  = [['m', 'Monthly'], ['r', '3-mo avg']];
+  var RANGES = [['12', '12m'], ['24', '24m'], ['36', '36m'], ['0', 'All']];
 
   function mlabel(key) { var p = key.split('-'); return U.MON[Number(p[1]) - 1] + ' ' + p[0]; }
-  function metricName(m) { return m === 'plf' ? 'Load factor, %' : (m.toUpperCase() + ' YoY, %'); }
 
   function rolling3(s) {
     return s.map(function (_, i) {
@@ -29,7 +25,7 @@
 
   function build(root, data) {
     var views = data.views;
-    var state = { view: 'system', metric: 'rpk', basis: 'm', range: '24' };
+    var state = { view: 'system', basis: 'm', range: '24' };
 
     function seg(label, opts, cur, on) {
       return el('div', { class: 'gdm-seg' }, [
@@ -44,12 +40,6 @@
     }
 
     function set(k, val) { state[k] = val; render(); }
-
-    /* series for a group under the current metric + basis */
-    function seriesFor(v, group) {
-      var s = (v.groups[group] && v.groups[group][state.metric]) || [];
-      return state.basis === 'r' ? rolling3(s) : s;
-    }
 
     /* ---- CSV: the current view, every month, every region, all three metrics ---- */
     function exportCSV() {
@@ -70,35 +60,45 @@
       URL.revokeObjectURL(a.href);
     }
 
-    /* ---- the month × region heatmap matrix ---- */
+    /* ---- the month × region matrix, all three metrics side by side ---- */
     function matrixCard() {
       var v = views[state.view];
       var months = v.months, order = v.order;
-      var isPlf = state.metric === 'plf';
-      var fill = isPlf ? HM.plfClass : HM.yoyClass;
-      var fmt = isPlf ? function (x) { return U.fmtPctPlain(x); } : function (x) { return U.fmtPct(x); };
+      var rolled = state.basis === 'r';
+      function ser(g, met) {
+        var s = (v.groups[g] && v.groups[g][met]) || [];
+        return rolled ? rolling3(s) : s;
+      }
+      var data = {};
+      order.forEach(function (g) { data[g] = { rpk: ser(g, 'rpk'), ask: ser(g, 'ask'), plf: ser(g, 'plf') }; });
 
       // rows = most recent N months, newest first
       var n = Number(state.range) || months.length;
       var from = Math.max(0, months.length - n);
 
-      var series = {};
-      order.forEach(function (g) { series[g] = seriesFor(v, g); });
-
-      var headCells = [el('th', { class: 'mlab' }, ['Month'])];
+      // two-row header: a region group, each split into RPK / ASK / PLF
+      var grpRow = [el('th', { class: 'mlab', rowspan: '2' }, ['Month'])];
+      var subRow = [];
       order.forEach(function (g) {
-        headCells.push(el('th', { class: 'val' + (g === 'Industry' ? ' is-ind' : '') }, [g]));
+        var ind = g === 'Industry' ? ' is-ind' : '';
+        grpRow.push(el('th', { class: 'grp gstart' + ind, colspan: '3' }, [g]));
+        subRow.push(el('th', { class: 'sub gstart' + ind }, ['RPK']));
+        subRow.push(el('th', { class: 'sub' + ind }, ['ASK']));
+        subRow.push(el('th', { class: 'sub' + ind }, ['PLF']));
       });
-      var thead = el('thead', {}, [el('tr', { class: 'sub' }, headCells)]);
+      var thead = el('thead', {}, [
+        el('tr', { class: 'grp' }, grpRow),
+        el('tr', { class: 'sub' }, subRow)
+      ]);
 
       var body = [];
       for (var i = months.length - 1; i >= from; i--) {
         var cells = [el('td', { class: 'mlab' }, [mlabel(months[i])])];
         for (var j = 0; j < order.length; j++) {
-          var val = series[order[j]][i];
-          cells.push(el('td', {
-            class: 'val ' + fill(val) + (order[j] === 'Industry' ? ' is-ind' : '')
-          }, [fmt(val)]));
+          var d = data[order[j]];
+          cells.push(el('td', { class: 'val gstart ' + HM.yoyClass(d.rpk[i]) }, [U.fmtPct(d.rpk[i])]));
+          cells.push(el('td', { class: 'val ' + HM.yoyClass(d.ask[i]) }, [U.fmtPct(d.ask[i])]));
+          cells.push(el('td', { class: 'val ' + HM.plfClass(d.plf[i]) }, [U.fmtPctPlain(d.plf[i])]));
         }
         body.push(el('tr', {}, cells));
       }
@@ -109,14 +109,14 @@
         'Monthly Traffic Detail — ' + VIEWS.filter(function (x) { return x[0] === state.view; })[0][1]
       ]);
       var note = el('div', { class: 'gdm-sechead-note' }, [
-        metricName(state.metric) + (state.basis === 'r' ? ' · 3-month rolling' : '') ]);
+        'RPK · ASK (YoY %) · PLF (load factor %)' + (rolled ? ' · 3-month rolling' : '') ]);
       var head = el('div', { class: 'section-head' }, [title, note]);
 
       return el('section', { class: 'card' }, [
         head, el('div', { class: 'detail-mtx-scroll' }, [table]),
         el('div', { class: 'matrix-note' }, [
-          isPlf ? 'Each cell is that region’s passenger load factor for the month. Greener = fuller flights.'
-                : 'Each cell is the year-on-year change for the month. Green = growth, red = decline.'
+          'RPK and ASK are year-on-year change (green = growth, red = decline); ' +
+          'PLF is the load factor % (greener = fuller flights).'
         ])
       ]);
     }
@@ -163,7 +163,6 @@
     function controls() {
       var bar = el('div', { class: 'gdm-controls' }, [
         seg('View', VIEWS.map(function (x) { return [x[0], x[1]]; }), state.view, function (val) { set('view', val); }),
-        seg('Metric', METRICS.map(function (x) { return [x[0], x[1]]; }), state.metric, function (val) { set('metric', val); }),
         seg('Basis', BASES, state.basis, function (val) { set('basis', val); }),
         seg('Range', RANGES, state.range, function (val) { set('range', val); })
       ]);
