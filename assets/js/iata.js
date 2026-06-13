@@ -30,13 +30,14 @@
     return el('td', { class: 'val ' + cls + (opts.span ? '' : ''), colspan: opts.span || null, text: text });
   }
 
-  function heroChart(title, sub) {
+  function heroChart(title, sub, exhibit) {
     var canvas = el('canvas');
+    var head = [];
+    if (exhibit != null) head.push(el('div', { class: 'chart-eyebrow', text: 'Exhibit ' + exhibit }));
+    head.push(el('div', { class: 'card-title' }, [el('span', { class: 'ico', html: I.globe }), title]));
+    head.push(el('div', { class: 'card-sub', text: sub }));
     var card = el('div', { class: 'card chart-card hero-chart' }, [
-      el('div', {}, [
-        el('div', { class: 'card-title' }, [el('span', { class: 'ico', html: I.globe }), title]),
-        el('div', { class: 'card-sub', text: sub })
-      ]),
+      el('div', {}, head),
       el('div', { class: 'chart-card__canvas' }, [canvas])
     ]);
     return { card: card, canvas: canvas };
@@ -59,8 +60,8 @@
     var rangeSub = U.fmtMonthLong(months[0]) + ' – ' + U.fmtMonthLong(months[months.length - 1]);
 
     /* ---- A. Hero charts ---- */
-    var h1 = heroChart('IATA Global System Airline Traffic, YoY %', rangeSub);
-    var h2 = heroChart('IATA Global Airline Domestic & International Traffic, YoY %', rangeSub);
+    var h1 = heroChart('IATA Global System Airline Traffic, YoY %', rangeSub, 1);
+    var h2 = heroChart('IATA Global Airline Domestic & International Traffic, YoY %', rangeSub, 2);
     var heroCharts = el('div', { class: 'grid charts-2' }, [h1.card, h2.card]);
 
     /* ---- B. Regional Performance Snapshot ---- */

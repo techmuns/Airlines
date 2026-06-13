@@ -54,6 +54,11 @@
    Chart cards & grids
    -------------------------------------------------------------------------- */
 .chart-card { padding: 14px 16px 13px; display: flex; flex-direction: column; }
+/* research-deck "Exhibit N" eyebrow above each chart title */
+.chart-eyebrow {
+  font-size: 9px; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase;
+  color: var(--gold-muted); margin-bottom: 4px;
+}
 .chart-card > div:first-child { min-height: 42px; }
 .chart-card__canvas {
   position: relative;
