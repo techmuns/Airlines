@@ -216,6 +216,10 @@
         rangeSel
       ]),
       el('div', { class: 'chart-card__canvas gdm-trend__canvas' }, [trendCanvas]),
+      el('div', { class: 'chart-note', html:
+        'Revenue passenger-kilometres (RPK, demand) and available seat-kilometres (ASK, capacity) on the ' +
+        'left axis, year-over-year; passenger load factor (PLF, level %) on the right axis. ' +
+        '<b>Source:</b> IATA Economics, Air Passenger Market Analysis.' }),
       el('div', { class: 'gdm-srcnote' }, [
         el('span', { class: 'gdm-srcnote__badge' }, [realCount + ' of ' + months.length + ' months are real IATA data']),
         el('span', { class: 'gdm-srcnote__item' }, [el('span', { class: 'gdm-srcnote__dot is-real' }), 'dots = real']),

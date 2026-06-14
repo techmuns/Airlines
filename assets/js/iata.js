@@ -35,16 +35,18 @@
     return el('td', { class: 'val ' + cls + (opts.span ? '' : ''), colspan: opts.span || null, text: text });
   }
 
-  function heroChart(title, sub, exhibit) {
+  function heroChart(title, sub, exhibit, note) {
     var canvas = el('canvas');
     var head = [];
     if (exhibit != null) head.push(el('div', { class: 'chart-eyebrow', text: 'Exhibit ' + exhibit }));
     head.push(el('div', { class: 'card-title' }, [el('span', { class: 'ico', html: I.globe }), title]));
     head.push(el('div', { class: 'card-sub', text: sub }));
-    var card = el('div', { class: 'card chart-card hero-chart' }, [
+    var kids = [
       el('div', {}, head),
       el('div', { class: 'chart-card__canvas' }, [canvas])
-    ]);
+    ];
+    if (note) kids.push(el('div', { class: 'chart-note', html: note }));
+    var card = el('div', { class: 'card chart-card hero-chart' }, kids);
     return { card: card, canvas: canvas };
   }
 
@@ -65,8 +67,14 @@
     var rangeSub = U.fmtMonthLong(months[0]) + ' – ' + U.fmtMonthLong(months[months.length - 1]);
 
     /* ---- A. Hero charts ---- */
-    var h1 = heroChart('IATA Global System Airline Traffic, YoY %', rangeSub, 1);
-    var h2 = heroChart('IATA Global Airline Domestic & International Traffic, YoY %', rangeSub, 2);
+    var h1 = heroChart('IATA Global System Airline Traffic, YoY %', rangeSub, 1,
+      'Year-over-year growth in global system-wide revenue passenger-kilometres (RPK) — paid passenger ' +
+      'traffic, and the industry’s primary measure of demand — by month. ' +
+      '<b>Source:</b> IATA Economics, Air Passenger Market Analysis.');
+    var h2 = heroChart('IATA Global Airline Domestic & International Traffic, YoY %', rangeSub, 2,
+      'Year-over-year RPK growth split by market. International traffic has led the post-pandemic ' +
+      'recovery; the spread between the two series signals the shifting mix of global demand. ' +
+      '<b>Source:</b> IATA Economics, Air Passenger Market Analysis.');
     var heroCharts = el('div', { class: 'grid charts-2' }, [h1.card, h2.card]);
 
     /* ---- B. Regional Performance Snapshot ---- */
@@ -144,6 +152,7 @@
       el('div', { class: 'hm-scroll' }, [
         el('table', { class: 'hm' }, [el('thead', {}, [el('tr', { class: 'grp' }, mGrp), el('tr', { class: 'sub' }, mSub)]), mBody])
       ]),
+      HM.legend(),
       el('div', { class: 'matrix-note', text: 'RPK / ASK shown as year-over-year %. PLF shown as load-factor level %. 3M Rolling = trailing 3-month average. Scroll horizontally to see all regions.' })
     ]);
 

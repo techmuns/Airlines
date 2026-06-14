@@ -22,6 +22,38 @@
     return 'fill-sneg';
   }
 
+  /* --- visual colour key explaining the buckets above (matches the cells exactly) --- */
+  // ordered weakest -> strongest so it reads left (red) to right (green)
+  function legend() {
+    var cols = [
+      { cls: 'fill-sneg', cap: 'Weakest',   yoy: '≤ −4%',     plf: '< 76%'   },
+      { cls: 'fill-mneg', cap: 'Weak',      yoy: '−4 to −1%', plf: '76–79%' },
+      { cls: 'fill-neu',  cap: 'Neutral',   yoy: '±1%',            plf: '79–81%' },
+      { cls: 'fill-mpos', cap: 'Good',      yoy: '+1 to +4%',           plf: '81–83%' },
+      { cls: 'fill-spos', cap: 'Strongest', yoy: '≥ +4%',          plf: '≥ 83%'  }
+    ];
+    var kids = [el('div', { class: 'hm-legend__corner' })];
+    cols.forEach(function (c) {
+      kids.push(el('div', { class: 'hm-legend__sw' }, [
+        el('span', { class: 'hm-legend__chip ' + c.cls }),
+        el('span', { class: 'hm-legend__cap', text: c.cap })
+      ]));
+    });
+    kids.push(el('div', { class: 'hm-legend__rlab', text: 'RPK · ASK (YoY)' }));
+    cols.forEach(function (c) { kids.push(el('div', { class: 'hm-legend__rng', text: c.yoy })); });
+    kids.push(el('div', { class: 'hm-legend__rlab', text: 'PLF (fullness)' }));
+    cols.forEach(function (c) { kids.push(el('div', { class: 'hm-legend__rng', text: c.plf })); });
+
+    return el('div', { class: 'hm-legend' }, [
+      el('div', { class: 'hm-legend__head' }, [
+        el('span', { class: 'hm-legend__title', text: 'Colour key' }),
+        el('span', { class: 'hm-legend__hint',
+          text: 'green = strong, red = weak · darker shade = stronger signal' })
+      ]),
+      el('div', { class: 'hm-legend__grid' }, kids)
+    ]);
+  }
+
   /* --- US holiday labels for the calendar --- */
   function nthWeekday(year, month, weekday, n) {        // month 0-based, weekday 0=Sun
     var d = new Date(Date.UTC(year, month, 1));
@@ -150,6 +182,7 @@
   global.ADM.heatmap = {
     yoyClass: yoyClass,
     plfClass: plfClass,
+    legend: legend,
     buildCalendar: buildCalendar
   };
 })(window);

@@ -35,16 +35,18 @@
     return el('div', { class: 'kpi' }, inner);
   }
 
-  function chartCard(title, sub, icon, exhibit) {
+  function chartCard(title, sub, icon, exhibit, note) {
     var canvas = el('canvas');
     var head = [];
     if (exhibit != null) head.push(el('div', { class: 'chart-eyebrow', text: 'Exhibit ' + exhibit }));
     head.push(el('div', { class: 'card-title' }, [el('span', { class: 'ico', html: icon || I.bars }), title]));
     head.push(el('div', { class: 'card-sub', text: sub }));
-    var card = el('div', { class: 'card chart-card' }, [
+    var kids = [
       el('div', {}, head),
       el('div', { class: 'chart-card__canvas' }, [canvas])
-    ]);
+    ];
+    if (note) kids.push(el('div', { class: 'chart-note', html: note }));
+    var card = el('div', { class: 'card chart-card' }, kids);
     return { card: card, canvas: canvas };
   }
 
@@ -107,13 +109,23 @@
     var dmaYoY = raw.yoy_7dma_daily;     // 7DMA-basis YoY series (exhibit)
 
     var c1 = chartCard('TSA Passenger Throughput, YoY %',
-      U.fmtMonthLong(ym.months[0]) + ' – ' + U.fmtMonthLong(ym.months[ym.months.length - 1]), I.bars, 3);
+      U.fmtMonthLong(ym.months[0]) + ' – ' + U.fmtMonthLong(ym.months[ym.months.length - 1]), I.bars, 3,
+      'Year-over-year change in TSA checkpoint throughput by calendar month, measured against the ' +
+      'same month a year earlier. Bar shading scales with the magnitude of the move. ' +
+      '<b>Source:</b> U.S. Transportation Security Administration (TSA.gov); authors’ calculations.');
     var c2 = chartCard('TSA Passenger Throughput, YoY % — 7DMA Basis',
-      '7DMA basis · ' + rangeDaily(dmaYoY, function (d) { return d.date; }), I.trend, 4);
+      '7DMA basis · ' + rangeDaily(dmaYoY, function (d) { return d.date; }), I.trend, 4,
+      'The same year-over-year series on a trailing seven-day moving-average basis, which neutralises ' +
+      'day-of-week seasonality to isolate the underlying trend. Plotted daily. ' +
+      '<b>Source:</b> TSA.gov; authors’ calculations.');
     var c3 = chartCard('Daily TSA Passenger Count',
-      '7-day moving average · ' + rangeDaily(days, function (d) { return d.date; }), I.trend, 5);
+      '7-day moving average · ' + rangeDaily(days, function (d) { return d.date; }), I.trend, 5,
+      'Daily checkpoint passenger volume, expressed as a trailing seven-day moving average to smooth ' +
+      'weekday effects and holiday distortions. <b>Source:</b> TSA.gov; authors’ calculations.');
     var c4 = chartCard('Monthly Average TSA Passenger Count',
-      U.fmtMonthLong(monthly[0].key) + ' – ' + U.fmtMonthLong(monthly[monthly.length - 1].key), I.bars, 6);
+      U.fmtMonthLong(monthly[0].key) + ' – ' + U.fmtMonthLong(monthly[monthly.length - 1].key), I.bars, 6,
+      'Average daily checkpoint volume aggregated by calendar month, in millions of passengers. ' +
+      '<b>Source:</b> TSA.gov; authors’ calculations.');
 
     var charts = el('div', { class: 'grid charts-2x2' }, [c1.card, c2.card, c3.card, c4.card]);
 

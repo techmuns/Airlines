@@ -114,6 +114,7 @@
 
       return el('section', { class: 'card' }, [
         head, el('div', { class: 'detail-mtx-scroll' }, [table]),
+        HM.legend(),
         el('div', { class: 'matrix-note' }, [
           'RPK and ASK are year-on-year change (green = growth, red = decline); ' +
           'PLF is the load factor % (greener = fuller flights).'
