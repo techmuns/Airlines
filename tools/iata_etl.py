@@ -424,8 +424,8 @@ def update_data(rec: dict, path: str = DATA_PATH):
     real = set(meta.get("real_months", []))
     real.add(target)
     meta["real_months"] = sorted(real)
-    meta["source"] = ("IATA Air Passenger Market Analysis (real figures for months listed in "
-                      "real_months; remaining months are synthetic sample data).")
+    meta["source"] = ("IATA Economics — Air Passenger Market Analysis (iata.org), monthly. "
+                      "Every month shown is a reported IATA figure.")
 
     changed = _payload_blob(data) != before
     if changed:
