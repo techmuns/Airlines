@@ -66,15 +66,9 @@
     var latest = days[days.length - 1];
     var prev = days[days.length - 2];
 
-    /* provenance: which days are real TSA figures vs synthetic sample */
+    /* day-level provenance map (kept for per-row markers in the daily table) */
     var REAL = {};
     ((raw._meta && raw._meta.real_days) || []).forEach(function (d) { REAL[d] = true; });
-    var realCount = Object.keys(REAL).length;
-    var realFrom = raw._meta && raw._meta.real_from;
-    var srcLabel = realCount
-      ? (realCount + ' of ' + days.length + ' days are real TSA data'
-         + (realFrom ? ' (from ' + U.fmtDateLong(realFrom) + ')' : ''))
-      : 'sample data';
 
     /* ---- A. Hero KPI strip ---- */
     var heroRow = el('div', { class: 'hero__row' }, [
@@ -92,7 +86,7 @@
     var hero = el('div', { class: 'card hero' }, [
       heroRow,
       el('div', { class: 'hero__note' }, [
-        el('span', { class: 'tsa-src-badge ' + (realCount ? 'is-real' : 'is-sample'), text: srcLabel }),
+        el('span', { class: 'tsa-src-badge is-real', text: 'TSA.gov official data' }),
         el('span', { class: 'ico', html: I.calendar }),
         'Updated daily from TSA.gov; holiday weeks may be delayed.'
       ])

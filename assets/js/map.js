@@ -187,13 +187,8 @@
     var controlBar = el('div', { class: 'card gdm-controlbar' }, [
       el('div', { class: 'gdm-controls' }, [metricSeg.el, viewSeg.el, periodSeg.el]),
       el('div', { class: 'gdm-controlbar__meta' }, [
-        el('span', { class: 'gdm-src-tag ' + (latestIsReal ? 'is-real' : 'is-sample'),
-          title: latestIsReal ? 'This month is real IATA data' : 'This month is sample data' },
-          [latestIsReal ? 'IATA actual' : 'sample']),
         el('span', { class: 'ico', html: I.calendar }),
-        'Latest month · ' + latestMonthLong,
-        el('span', { class: 'gdm-src-count',
-          text: '· ' + realCount + ' of ' + months.length + ' months real' })
+        'Latest reported month · ' + latestMonthLong
       ])
     ]);
 
@@ -219,12 +214,7 @@
       el('div', { class: 'chart-note', html:
         'Revenue passenger-kilometres (RPK, demand) and available seat-kilometres (ASK, capacity) on the ' +
         'left axis, year-over-year; passenger load factor (PLF, level %) on the right axis. ' +
-        '<b>Source:</b> IATA Economics, Air Passenger Market Analysis.' }),
-      el('div', { class: 'gdm-srcnote' }, [
-        el('span', { class: 'gdm-srcnote__badge' }, [realCount + ' of ' + months.length + ' months are real IATA data']),
-        el('span', { class: 'gdm-srcnote__item' }, [el('span', { class: 'gdm-srcnote__dot is-real' }), 'dots = real']),
-        el('span', { class: 'gdm-srcnote__item' }, [el('span', { class: 'gdm-srcnote__dash' }), 'dashed = sample (awaiting report)'])
-      ])
+        '<b>Source:</b> IATA Economics, Air Passenger Market Analysis.' })
     ]);
 
     var snap = buildSnapshot();

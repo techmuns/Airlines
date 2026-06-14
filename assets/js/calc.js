@@ -61,10 +61,12 @@
       if (!groups[key]) { groups[key] = []; order.push(key); }
       groups[key].push(d.throughput);
     });
+    var lastKey = order[order.length - 1];
     return order.map(function (key) {
       var arr = groups[key];
-      return { key: key, avg: arr.reduce(function (a, b) { return a + b; }, 0) / arr.length };
-    });
+      return { key: key, n: arr.length,
+               avg: arr.reduce(function (a, b) { return a + b; }, 0) / arr.length };
+    }).filter(function (m) { return m.n >= 25 || m.key === lastKey; });   // omit incomplete interior months
   }
 
   // Year-over-year % of the monthly averages (for the monthly YoY bar chart)
