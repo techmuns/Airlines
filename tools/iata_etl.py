@@ -200,17 +200,30 @@ def _parse_column_blocks(block: str, month: str) -> dict:
     i_note = block.find("Note 1")
     if i_note == -1:
         raise ValueError("column-blocks: 'Note 1' not found")
-    shares = _floats(block[:i_note])
+    ws = _floats(block[:i_note])[:7]
     nums = _floats(block[i_note:])
-    if len(shares) < 7 or len(nums) < 84:
-        raise ValueError("column-blocks: unexpected value counts")
-    rpk, ask, plf = nums[0:7], nums[21:28], nums[63:70]
-    industry = {"share": 100.0, "rpk": rpk[0], "ask": ask[0], "plf": plf[0], "plf_pp": 0.0}
-    regions = {key: {"share": shares[k + 1], "rpk": rpk[k + 1], "ask": ask[k + 1],
-                     "plf": plf[k + 1], "plf_pp": 0.0}
-               for k, key in enumerate(WORLD_ORDER)}
-    return _finalise({"month": month, "industry": industry, "regions": regions,
-                      "international_rpk": nums[7], "domestic_rpk": nums[14]})
+    if len(ws) < 7:
+        raise ValueError("column-blocks: shares not found")
+    # Two extraction variants occur in practice; try each and let _finalise's
+    # reconciliation pick the right one (a mis-aligned read never reconciles).
+    # (industry rpk/ask/plf idx), (region rpk/ask/plf start), intl idx, dom idx
+    variants = [
+        ((0, 21, 63), (1, 22, 64), 7, 14),     # clean 21-value blocks, total first   (e.g. Jul 2025)
+        ((1, 2, 4),   (5, 25, 65), 11, 18),    # stray share + grouped totals, then 20 (e.g. Aug 2025)
+    ]
+    for (ii, rs, intl_i, dom_i) in variants:
+        if max(ii[0], ii[1], ii[2], rs[0] + 5, rs[1] + 5, rs[2] + 5, intl_i, dom_i) >= len(nums):
+            continue
+        industry = {"share": 100.0, "rpk": nums[ii[0]], "ask": nums[ii[1]], "plf": nums[ii[2]], "plf_pp": 0.0}
+        regions = {key: {"share": ws[k + 1], "rpk": nums[rs[0] + k], "ask": nums[rs[1] + k],
+                         "plf": nums[rs[2] + k], "plf_pp": 0.0}
+                   for k, key in enumerate(WORLD_ORDER)}
+        try:
+            return _finalise({"month": month, "industry": industry, "regions": regions,
+                              "international_rpk": nums[intl_i], "domestic_rpk": nums[dom_i]})
+        except ValueError:
+            continue
+    raise ValueError("column-blocks: no variant reconciled")
 
 
 def _parse_row_major_pct(block: str, month: str) -> dict:
