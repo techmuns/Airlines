@@ -191,6 +191,60 @@ def _parse_column_major(block: str, month: str) -> dict:
                       "international_rpk": intl_rpk, "domestic_rpk": dom_rpk})
 
 
+def _parse_column_blocks(block: str, month: str) -> dict:
+    """Modern column layout (e.g. mid-2025 reports): region labels and the world
+    share column come *before* 'Note 1', then the year-on-year RPK, ASK,
+    PLF(%-pt) and PLF(level) each appear as a clean block of 21 values
+    (7 world + 7 international + 7 domestic). We read the world block; the
+    reconciliation check in _finalise rejects any mis-aligned read."""
+    i_note = block.find("Note 1")
+    if i_note == -1:
+        raise ValueError("column-blocks: 'Note 1' not found")
+    shares = _floats(block[:i_note])
+    nums = _floats(block[i_note:])
+    if len(shares) < 7 or len(nums) < 84:
+        raise ValueError("column-blocks: unexpected value counts")
+    rpk, ask, plf = nums[0:7], nums[21:28], nums[63:70]
+    industry = {"share": 100.0, "rpk": rpk[0], "ask": ask[0], "plf": plf[0], "plf_pp": 0.0}
+    regions = {key: {"share": shares[k + 1], "rpk": rpk[k + 1], "ask": ask[k + 1],
+                     "plf": plf[k + 1], "plf_pp": 0.0}
+               for k, key in enumerate(WORLD_ORDER)}
+    return _finalise({"month": month, "industry": industry, "regions": regions,
+                      "international_rpk": nums[7], "domestic_rpk": nums[14]})
+
+
+def _parse_row_major_pct(block: str, month: str) -> dict:
+    """Older compact layout (e.g. early-2024 reports): each row is the label
+    glued to eight percentages with no separators — share, RPK, ASK, PLF(%-pt)
+    [year-on-year], the same three vs-2019, then PLF(level)."""
+    t0 = block.find("TOTAL MARKET")
+    if t0 == -1:
+        raise ValueError("row-major-%: no TOTAL MARKET")
+    t_intl = block.find("International", t0)
+    world = block[t0:t_intl] if t_intl != -1 else block[t0:]
+    pct8 = r"\s*" + "".join([r"(-?\d+\.\d+)%"] * 8)
+    industry, regions = None, {}
+    for pat, key in REGION_PATTERNS:
+        m = re.search(pat + pct8, world)
+        if not m:
+            continue
+        g = [float(x) for x in m.groups()]
+        r = {"share": g[0], "rpk": g[1], "ask": g[2], "plf": g[7], "plf_pp": g[3]}
+        if key == "Industry":
+            industry = r
+        else:
+            regions[key] = r
+    if industry is None or len(regions) != 6:
+        raise ValueError("row-major-%: parsed %d/6 regions" % len(regions))
+
+    def _row_rpk(lbl):
+        m = re.search(lbl + pct8, block)
+        return float(m.group(2)) if m else None
+    return _finalise({"month": month, "industry": industry, "regions": regions,
+                      "international_rpk": _row_rpk("International"),
+                      "domestic_rpk": _row_rpk("Domestic")})
+
+
 def parse_intl_dom(block: str) -> dict:
     """Extract the International and Domestic sections of the detail table —
     per-region (International) and per-country (Domestic) share / RPK / ASK / PLF
@@ -239,10 +293,16 @@ def parse_detail(text: str) -> dict:
     if not mm or mm.group(1) not in MONTHNUM:
         raise ValueError("Could not read the report month from the table header.")
     month = "%04d-%02d" % (int(mm.group(2)), MONTHNUM[mm.group(1)])
-    try:
-        rec = _parse_row_major(block, month)
-    except ValueError:
-        rec = _parse_column_major(block, month)
+    rec = None
+    for parser in (_parse_row_major, _parse_column_major,
+                   _parse_column_blocks, _parse_row_major_pct):
+        try:
+            rec = parser(block, month)
+            break
+        except ValueError:
+            continue
+    if rec is None:
+        raise ValueError("no parser matched the detail-table layout for %s" % month)
     try:                                                # additive: International/Domestic detail
         extra = parse_intl_dom(block)
         rec["international_detail"] = extra["international"]
@@ -295,14 +355,26 @@ def update_data(rec: dict, path: str = DATA_PATH):
     if target not in months:
         if target < months[0]:
             raise ValueError("Month %s predates the dataset start %s." % (target, months[0]))
-        for mk in _months_between(months[-1], target):
-            months.append(mk)
+        elif target > months[-1]:
+            for mk in _months_between(months[-1], target):
+                months.append(mk)
+                for r in data["regions"]:
+                    series["rpk_yoy"][r].append(None)
+                    series["ask_yoy"][r].append(None)
+                    series["plf"][r].append(None)
+                data["global"]["domestic_rpk_yoy"].append(None)
+                data["global"]["international_rpk_yoy"].append(None)
+        else:
+            # interior gap (back-filling a month between existing ones): insert
+            # the slot in chronological order so every series stays aligned.
+            idx = next(j for j, mk in enumerate(months) if mk > target)
+            months.insert(idx, target)
             for r in data["regions"]:
-                series["rpk_yoy"][r].append(None)
-                series["ask_yoy"][r].append(None)
-                series["plf"][r].append(None)
-            data["global"]["domestic_rpk_yoy"].append(None)
-            data["global"]["international_rpk_yoy"].append(None)
+                series["rpk_yoy"][r].insert(idx, None)
+                series["ask_yoy"][r].insert(idx, None)
+                series["plf"][r].insert(idx, None)
+            data["global"]["domestic_rpk_yoy"].insert(idx, None)
+            data["global"]["international_rpk_yoy"].insert(idx, None)
 
     i = months.index(target)
 
