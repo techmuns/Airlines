@@ -354,7 +354,14 @@ def update_data(rec: dict, path: str = DATA_PATH):
 
     if target not in months:
         if target < months[0]:
-            raise ValueError("Month %s predates the dataset start %s." % (target, months[0]))
+            # back-fill a month before the current start: prepend it.
+            months.insert(0, target)
+            for r in data["regions"]:
+                series["rpk_yoy"][r].insert(0, None)
+                series["ask_yoy"][r].insert(0, None)
+                series["plf"][r].insert(0, None)
+            data["global"]["domestic_rpk_yoy"].insert(0, None)
+            data["global"]["international_rpk_yoy"].insert(0, None)
         elif target > months[-1]:
             for mk in _months_between(months[-1], target):
                 months.append(mk)
