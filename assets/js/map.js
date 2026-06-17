@@ -53,6 +53,38 @@
   }
   function r1(v) { return Math.round(v * 10) / 10; }
 
+  /* honour the OS "reduce motion" setting — pulsation is decorative only */
+  var REDUCED = !!(window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  /* a single expanding radar "ping" ring — browser-driven SMIL, loops forever.
+     beginNeg is a negative offset so the ring is already mid-flight on load. */
+  function pingRing(R, col, dur, beginNeg, w, op0) {
+    var c = svg('circle', { class: 'gdm-bubble__ping', r: r1(R * 0.7),
+      fill: 'none', stroke: col, 'stroke-width': r1(w), opacity: '0' });
+    c.appendChild(svg('animate', { attributeName: 'r',
+      values: r1(R * 0.7) + ';' + r1(R * 2.95), dur: r1(dur) + 's',
+      begin: r1(beginNeg) + 's', repeatCount: 'indefinite',
+      calcMode: 'spline', keyTimes: '0;1', keySplines: '.12 .6 .3 1' }));
+    c.appendChild(svg('animate', { attributeName: 'opacity',
+      values: r1(op0) + ';' + r1(op0 * 0.5) + ';0', dur: r1(dur) + 's',
+      begin: r1(beginNeg) + 's', repeatCount: 'indefinite', keyTimes: '0;.4;1' }));
+    return c;
+  }
+
+  /* gentle eased "breathing" — opacity, plus an optional scale pulse */
+  function breathe(node, vals, dur, beginNeg, scaleVals) {
+    node.appendChild(svg('animate', { attributeName: 'opacity', values: vals,
+      dur: r1(dur) + 's', begin: r1(beginNeg) + 's', repeatCount: 'indefinite',
+      calcMode: 'spline', keyTimes: '0;.5;1', keySplines: '.45 0 .55 1;.45 0 .55 1' }));
+    if (scaleVals) {
+      node.appendChild(svg('animateTransform', { attributeName: 'transform',
+        type: 'scale', values: scaleVals, dur: r1(dur) + 's', begin: r1(beginNeg) + 's',
+        repeatCount: 'indefinite', calcMode: 'spline', keyTimes: '0;.5;1',
+        keySplines: '.45 0 .55 1;.45 0 .55 1' }));
+    }
+  }
+
   /* ---- per-region summary across the full monthly series ---- */
   function summarise(raw) {
     var S = {};
@@ -270,8 +302,12 @@
       // fine halftone texture on the landmass; a sparse few are warm hub sparks
       var dots = '<g class="gdm-dots">' + WM.dots.map(function (p, i) {
         var warm = (i * 5) % 17 === 0;
-        return '<circle' + (warm ? ' class="is-warm"' : '') +
-               ' cx="' + p[0] + '" cy="' + p[1] + '" r="' + (warm ? 1 : 0.8) + '"/>';
+        if (warm) {
+          // warm hub sparks gently twinkle (staggered) — a living traffic field
+          return '<circle class="is-warm" style="--d:' + (((i * 7) % 34) / 10) +
+                 's" cx="' + p[0] + '" cy="' + p[1] + '" r="1"/>';
+        }
+        return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="0.8"/>';
       }).join('') + '</g>';
       var vin = '<rect x="0" y="0" width="' + WM.width + '" height="' + WM.height +
                 '" fill="url(#gdmVin)" pointer-events="none"/>';
@@ -297,18 +333,58 @@
           transform: 'translate(' + r1(p.x) + ',' + r1(p.y) + ')',
           tabindex: '0', role: 'button', 'aria-label': r });
 
-        // controlled halo, a single thin metallic ring, a compact champagne core
-        g.appendChild(svg('circle', { r: r1(glowR), fill: haloCol,
-          opacity: r1(0.08 + 0.2 * st), filter: 'url(#gdmGlow)' }));
-        if (state.region === r) {
-          g.appendChild(svg('circle', { class: 'gdm-bubble__sel', r: r1(R + 3.5),
-            fill: 'none', stroke: 'rgba(236,222,182,.82)', 'stroke-width': '0.8' }));
+        // breathing halo, expanding radar pings, a thin metallic ring and a
+        // pulsing champagne core — pulse speed tracks each region's momentum
+        var idx = REGIONS.indexOf(r);
+        var haloBase = 0.08 + 0.2 * st;
+        var halo = svg('circle', { r: r1(glowR), fill: haloCol,
+          opacity: r1(haloBase), filter: 'url(#gdmGlow)' });
+        g.appendChild(halo);
+
+        // sonar pings radiate outward; stronger momentum → faster, brighter,
+        // more rings. Weak (negative) regions ping slowly in a soft red.
+        if (!REDUCED) {
+          var pingCol = weak ? 'rgb(226,116,104)' : mix(GOLD_DIM, GOLD_HALO, st);
+          var pingDur = weak ? 4.2 : (3.5 - 1.3 * st);
+          var pingOp = weak ? 0.4 : (0.3 + 0.32 * st);
+          var nPings = weak ? 2 : 3;
+          for (var pi = 0; pi < nPings; pi++) {
+            g.appendChild(pingRing(R, pingCol, pingDur,
+              -(idx * 0.5 + pi * (pingDur / nPings)),
+              weak ? 1.2 : (1.4 - 0.3 * st), pingOp));
+          }
         }
+
+        if (state.region === r) {
+          var sel = svg('circle', { class: 'gdm-bubble__sel', r: r1(R + 3.5),
+            fill: 'none', stroke: 'rgba(236,222,182,.82)', 'stroke-width': '0.8' });
+          if (!REDUCED) {
+            sel.appendChild(svg('animate', { attributeName: 'r',
+              values: r1(R + 3) + ';' + r1(R + 6.5) + ';' + r1(R + 3), dur: '2.6s',
+              repeatCount: 'indefinite', calcMode: 'spline', keyTimes: '0;.5;1',
+              keySplines: '.45 0 .55 1;.45 0 .55 1' }));
+            sel.appendChild(svg('animate', { attributeName: 'stroke-opacity',
+              values: '.85;.35;.85', dur: '2.6s', repeatCount: 'indefinite',
+              calcMode: 'spline', keyTimes: '0;.5;1', keySplines: '.45 0 .55 1;.45 0 .55 1' }));
+          }
+          g.appendChild(sel);
+        }
+
         g.appendChild(svg('circle', { r: r1(R), fill: 'none',
           stroke: weak ? 'rgba(190,98,88,.6)' : 'rgba(224,196,132,' + r1(0.38 + 0.34 * st) + ')',
           'stroke-width': weak ? '1' : '0.9' }));
-        g.appendChild(svg('circle', { class: 'gdm-bubble__core', r: r1(coreR),
-          fill: 'url(#gdmCore)', opacity: r1(0.86 + 0.14 * st) }));
+
+        var coreOp = 0.86 + 0.14 * st;
+        var core = svg('circle', { class: 'gdm-bubble__core', r: r1(coreR),
+          fill: 'url(#gdmCore)', opacity: r1(coreOp) });
+        if (!REDUCED) {
+          var brDur = 2.5 + 0.7 * (1 - st);   // strong momentum → quicker breath
+          breathe(core, r1(coreOp * 0.78) + ';' + r1(Math.min(1, coreOp + 0.05)) + ';' + r1(coreOp * 0.78),
+            brDur, -(idx * 0.5), '.82;1.14;.82');
+          breathe(halo, r1(haloBase * 0.65) + ';' + r1(haloBase * 1.8) + ';' + r1(haloBase * 0.65),
+            brDur * 1.3, -(idx * 0.5));
+        }
+        g.appendChild(core);
 
         // side label: region name (caps) + the selected value beneath
         var lx = r1(R + 9);
