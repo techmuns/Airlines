@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Airline Demand Monitor</title>
   <meta name="description" content="Airline passenger demand and regional aviation traffic — a premium dark aviation research dashboard." />
-  <link rel="stylesheet" href="assets/css/theme.css?v=20260614b" />
-  <link rel="stylesheet" href="assets/css/components.css?v=20260614b" />
-  <link rel="stylesheet" href="assets/css/map.css?v=20260614b" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20260617a" />
+  <link rel="stylesheet" href="assets/css/components.css?v=20260617a" />
+  <link rel="stylesheet" href="assets/css/map.css?v=20260617a" />
 </head>
 <body>
   <div class="shell">
@@ -66,19 +66,21 @@
     </footer>
   </div>
 
-  <!-- vendored Chart.js (self-contained, no external CDN at runtime) -->
-  <script src="assets/js/lib/chart.umd.js"></script>
+  <!-- vendored Chart.js (self-contained, no external CDN at runtime).
+       ?v is bumped with the app version so a stale/partial cached copy of the
+       library can be force-refreshed — without it, blank charts can't be busted. -->
+  <script src="assets/js/lib/chart.umd.js?v=20260617a"></script>
   <!-- app modules (plain scripts, no build step) — ?v bumps on each change so
        browsers/CDN never mix a new file with a stale cached one -->
-  <script defer src="assets/js/util.js?v=20260614b"></script>
-  <script defer src="assets/js/calc.js?v=20260614b"></script>
-  <script defer src="assets/js/charts.js?v=20260614b"></script>
-  <script defer src="assets/js/heatmap.js?v=20260614b"></script>
-  <script defer src="assets/js/worldmap.js?v=20260614b"></script>
-  <script defer src="assets/js/map.js?v=20260614b"></script>
-  <script defer src="assets/js/tsa.js?v=20260614b"></script>
-  <script defer src="assets/js/iata.js?v=20260614b"></script>
-  <script defer src="assets/js/detail.js?v=20260614b"></script>
-  <script defer src="assets/js/app.js?v=20260614b"></script>
+  <script defer src="assets/js/util.js?v=20260617a"></script>
+  <script defer src="assets/js/calc.js?v=20260617a"></script>
+  <script defer src="assets/js/charts.js?v=20260617a"></script>
+  <script defer src="assets/js/heatmap.js?v=20260617a"></script>
+  <script defer src="assets/js/worldmap.js?v=20260617a"></script>
+  <script defer src="assets/js/map.js?v=20260617a"></script>
+  <script defer src="assets/js/tsa.js?v=20260617a"></script>
+  <script defer src="assets/js/iata.js?v=20260617a"></script>
+  <script defer src="assets/js/detail.js?v=20260617a"></script>
+  <script defer src="assets/js/app.js?v=20260617a"></script>
 </body>
 </html>
