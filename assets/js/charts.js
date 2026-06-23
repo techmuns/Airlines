@@ -43,6 +43,14 @@
   var round1 = function (v) { return Math.round(v * 10) / 10; };          // 1-dp %, for YoY
   var roundM1 = function (v) { return Math.round(v / 1e5) / 10; };        // millions, 1 dp, for counts
 
+  // Building a chart on a canvas that still holds a live one throws
+  // "Canvas is already in use"; clearing any previous chart first makes every
+  // factory safe to call again, so a tab can rebuild its charts to recover.
+  function destroyExisting(canvas) {
+    var prev = Chart && Chart.getChart && Chart.getChart(canvas);
+    if (prev) prev.destroy();
+  }
+
   if (Chart) {
     Chart.defaults.font.family = FONT;
     Chart.defaults.font.size = 11;
@@ -131,6 +139,7 @@
 
   function barChart(canvas, labels, data, o) {
     o = o || {};
+    destroyExisting(canvas);
     var chart = new Chart(canvas.getContext('2d'), {
       type: 'bar',
       data: { labels: labels, datasets: [{
@@ -148,6 +157,7 @@
 
   function lineChart(canvas, labels, data, o) {
     o = o || {};
+    destroyExisting(canvas);
     return new Chart(canvas.getContext('2d'), {
       type: 'line',
       data: { labels: labels, datasets: [{
@@ -166,6 +176,7 @@
 
   function groupedBarChart(canvas, labels, series, o) {
     o = o || {};
+    destroyExisting(canvas);
     var chart = new Chart(canvas.getContext('2d'), {
       type: 'bar',
       data: {

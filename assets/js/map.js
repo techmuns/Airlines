@@ -514,6 +514,8 @@
     function buildTrend() {
       var d = S[state.region];
       var pctY = function (v) { return v + '%'; };
+      var prevTrend = Chart && Chart.getChart && Chart.getChart(trendCanvas);
+      if (prevTrend) prevTrend.destroy();
       trendChart = new Chart(trendCanvas.getContext('2d'), {
         type: 'line',
         data: {
@@ -618,9 +620,10 @@
     /* ---- lazy chart init (Chart.js canvas must be visible to size) ---- */
     var done = false;
     function initCharts() {
-      if (done) return; done = true;
+      if (done) return;
       buildTrend();
       updateTrend();
+      done = true;   // only latch once the trend chart actually built
     }
 
     return { initCharts: initCharts };

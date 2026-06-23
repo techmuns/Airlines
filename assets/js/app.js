@@ -55,13 +55,45 @@
           global.ADM.detail.build(detailHost, detail);
         }
 
+        // Re-measure every chart in a panel. Charts built while their panel was
+        // hidden come out 0×0; some browsers (Safari/iOS, some in-app webviews)
+        // do NOT re-fire their size observer when the panel is shown again, so
+        // without this explicit resize those charts stay blank until a reload.
+        function resizePanelCharts(panel) {
+          if (!global.Chart || !global.Chart.getChart) return;
+          var canvases = panel.querySelectorAll('canvas');
+          for (var i = 0; i < canvases.length; i++) {
+            var chart = global.Chart.getChart(canvases[i]);
+            if (chart) { try { chart.resize(); } catch (e) {} }
+          }
+        }
+
+        // Build a tab's charts only once its panel actually has a size, then
+        // resize them so they fit the now-visible panel. Waiting for a real
+        // layout box avoids baking blank 0×0 charts when tabs are switched
+        // quickly (the panel can still be hidden when a deferred build runs).
+        function showCharts(tab, tries) {
+          if (tries == null) tries = 30;
+          if (tab.panel.offsetWidth > 0 && tab.panel.offsetHeight > 0) {
+            try { tab.ctl.initCharts(); }
+            catch (e) { if (global.console) global.console.error('chart init failed', e); }
+            resizePanelCharts(tab.panel);
+            // one more pass next frame, after fonts/late layout settle
+            requestAnimationFrame(function () { resizePanelCharts(tab.panel); });
+            return;
+          }
+          if (tries <= 0) return;   // still hidden — it'll build when next shown
+          requestAnimationFrame(function () { showCharts(tab, tries - 1); });
+        }
+
         function activate(key) {
           Object.keys(tabs).forEach(function (k) {
             var on = k === key;
             tabs[k].btn.classList.toggle('is-active', on);
             tabs[k].panel.hidden = !on;
           });
-          requestAnimationFrame(function () { tabs[key].ctl.initCharts(); });
+          var tab = tabs[key];
+          requestAnimationFrame(function () { showCharts(tab); });
         }
 
         tabs.map.btn.addEventListener('click', function () { activate('map'); });

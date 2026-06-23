@@ -210,7 +210,7 @@
     /* ---- lazy chart init (canvas must be visible to size correctly) ---- */
     var done = false;
     function initCharts() {
-      if (done) return; done = true;
+      if (done) return;
       var pctY = function (v) { return v + '%'; };
       var milY = function (v) { return (v / 1e6).toFixed(1); };
       var monthX = function (v) { return U.fmtMonthShort(this.getLabelForValue(v).slice(0, 7)); };
@@ -242,6 +242,7 @@
         yMin: 0, yCallback: milY, yTitle: 'Millions', maxBar: 16,
         barLabels: { display: true, size: 8.5, color: CH.INK.label, formatter: function (v) { return (v / 1e6).toFixed(1); } },
         tooltip: { label: function (c) { return U.fmtInt(c.raw); } } });
+      done = true;   // only latch once all four charts actually built
     }
 
     return { initCharts: initCharts };

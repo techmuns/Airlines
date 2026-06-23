@@ -195,7 +195,7 @@
     /* ---- lazy chart init ---- */
     var done = false;
     function initCharts() {
-      if (done) return; done = true;
+      if (done) return;
       var pctY = function (v) { return v + '%'; };
 
       CH.barChart(h1.canvas, monthLabels, indRpk.map(function (v) { return v; }), {
@@ -215,6 +215,7 @@
                     font: { size: 11, weight: '600' }, usePointStyle: true, pointStyle: 'rectRounded' } },
         tooltip: { label: function (c) { return c.dataset.label + ': ' + c.raw.toFixed(1) + '%'; } }
       });
+      done = true;   // only latch once both charts actually built
     }
 
     return { initCharts: initCharts };
