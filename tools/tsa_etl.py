@@ -64,9 +64,52 @@ class _Table(HTMLParser):
 
 
 def fetch_html(url: str = URL, timeout: int = 45) -> str:
+    """Plain HTTP fetch. TSA.gov sits behind Akamai bot protection that returns
+    403 to datacenter IPs (e.g. CI runners), so this is the fallback, not the
+    primary path — see load_page()."""
     req = urllib.request.Request(url, headers=HEADERS)
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read().decode("utf-8", "replace")
+
+
+def fetch_html_browser(url: str = URL, timeout: int = 60) -> str:
+    """Render the page in real headless Chromium so bot-protected origins serve
+    the table. A genuine browser runs Akamai's JS sensor and passes the check,
+    where a plain request is 403'd. Mirrors the IATA pipeline, which already
+    fetches from a bot-protected site this way."""
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        browser = p.chromium.launch(
+            args=["--no-sandbox", "--disable-blink-features=AutomationControlled"])
+        try:
+            ctx = browser.new_context(user_agent=HEADERS["User-Agent"], locale="en-US",
+                                      viewport={"width": 1280, "height": 2000})
+            page = ctx.new_page()
+            for _ in range(2):                       # Akamai often clears on a 2nd hit
+                page.goto(url, wait_until="domcontentloaded", timeout=timeout * 1000)
+                try:
+                    page.wait_for_selector("table", timeout=15000)
+                    break
+                except Exception:                    # challenge page — let it settle, retry
+                    page.wait_for_timeout(3500)
+            return page.content()
+        finally:
+            browser.close()
+
+
+def load_page(url: str = URL, use_browser: bool = True, timeout: int = 60) -> str:
+    """Fetch a page's HTML, preferring a real browser (clears bot protection) and
+    falling back to a plain HTTP request if Chromium is unavailable or fails."""
+    if use_browser:
+        try:
+            html = fetch_html_browser(url, timeout=timeout)
+            if html and len(html) > 500:
+                return html
+            print("  browser returned an empty page; trying plain HTTP", file=sys.stderr)
+        except Exception as e:  # noqa: BLE001  (playwright missing, launch/timeout, ...)
+            print("  browser fetch failed (%s); trying plain HTTP" %
+                  str(e).splitlines()[0], file=sys.stderr)
+    return fetch_html(url, timeout=timeout)
 
 
 def extract_rows(html: str):
@@ -125,7 +168,7 @@ def fetch_archive(date_yyyymmdd: str) -> str:
     """Fetch the TSA page as archived by the Internet Archive on/near a date.
     The 'id_' modifier returns the original page (no Wayback toolbar)."""
     url = "https://web.archive.org/web/%sid_/%s" % (date_yyyymmdd, URL)
-    return fetch_html(url, timeout=60)
+    return load_page(url, timeout=70)
 
 
 # ---------------------------------------------------------------------------
@@ -205,6 +248,8 @@ def main(argv=None) -> int:
     ap.add_argument("--backfill", default="",
                     help="space-separated YYYYMMDD Internet-Archive snapshot dates to seed history")
     ap.add_argument("--url", default=URL)
+    ap.add_argument("--no-browser", action="store_true",
+                    help="skip headless Chromium and use a plain HTTP request only")
     args = ap.parse_args(argv)
 
     if args.backfill:
@@ -217,7 +262,7 @@ def main(argv=None) -> int:
             except Exception as e:  # noqa: BLE001
                 print("  archive %s failed: %s" % (ts, str(e).splitlines()[0]))
         try:
-            live = parse_daily(fetch_html())
+            live = parse_daily(load_page(URL, use_browser=not args.no_browser))
             print("  live -> %d days" % len(live))
             combined.update(live)
         except Exception as e:  # noqa: BLE001
@@ -233,7 +278,7 @@ def main(argv=None) -> int:
         return 0
 
     try:
-        html = fetch_html(args.url)
+        html = load_page(args.url, use_browser=not args.no_browser)
     except Exception as e:  # noqa: BLE001
         print("ERROR fetching TSA page:", e, file=sys.stderr)
         return 1

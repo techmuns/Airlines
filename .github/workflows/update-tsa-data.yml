@@ -37,6 +37,14 @@ jobs:
         with:
           python-version: "3.12"
 
+      # TSA.gov is behind Akamai bot protection that 403s plain requests from CI
+      # IPs. A real headless browser clears the check (same approach as the IATA
+      # workflow), so the ETL renders the page in Chromium.
+      - name: Install headless browser
+        run: |
+          pip install --quiet playwright
+          python -m playwright install --with-deps chromium
+
       - name: Diagnose TSA page and stop
         if: ${{ github.event.inputs.diagnose != '' }}
         run: python tools/tsa_etl.py --diagnose
@@ -45,9 +53,12 @@ jobs:
         if: ${{ github.event.inputs.diagnose == '' && github.event.inputs.backfill != '' }}
         run: python tools/tsa_etl.py --backfill "${{ github.event.inputs.backfill }}"
 
+      # No `|| echo` mask here: if the fetch or parse genuinely fails, the run
+      # must go RED so a broken feed is visible instead of silently freezing the
+      # data behind a green check. A normal "fetched OK, no new day" still exits 0.
       - name: Fetch & update TSA data
         if: ${{ github.event.inputs.diagnose == '' && github.event.inputs.backfill == '' }}
-        run: python tools/tsa_etl.py || echo "::warning::TSA update produced no change (page unreachable or layout changed)."
+        run: python tools/tsa_etl.py
 
       - name: Commit if data changed
         if: ${{ github.event.inputs.diagnose == '' }}

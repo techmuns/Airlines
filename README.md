@@ -74,12 +74,18 @@ PDF) are stored.
 
 TSA publishes daily checkpoint passenger volumes on `tsa.gov/travel/passenger-volumes`.
 
-- `tools/tsa_etl.py` reads that table into `data/tsa.json`.
-  - `python3 tools/tsa_etl.py` — fetch & merge the latest days
+- `tools/tsa_etl.py` reads that table into `data/tsa.json`. The page is behind
+  Akamai bot protection that 403s plain requests from datacenter/CI IPs, so the
+  ETL renders it in headless Chromium (Playwright) and falls back to a plain
+  request only if the browser is unavailable.
+  - `python3 tools/tsa_etl.py` — fetch (via browser) & merge the latest days
+  - `python3 tools/tsa_etl.py --no-browser` — force the plain-request path
   - `python3 tools/tsa_etl.py --diagnose` — print the page structure
   - `python3 tools/tsa_etl.py --backfill "YYYYMMDD ..."` — seed history from
     Internet-Archive snapshots of the same table
-- `.github/workflows/update-tsa-data.yml` runs daily and commits any change.
+- `.github/workflows/update-tsa-data.yml` runs daily, installs Chromium, and
+  commits any change. A genuine fetch/parse failure now fails the run (red)
+  instead of being masked as success.
 
 `data/tsa.json` carries `_meta.real_days` (and `_meta.real_from`) marking the
 real days; the rest stay synthetic sample. The two pipelines are independent —
