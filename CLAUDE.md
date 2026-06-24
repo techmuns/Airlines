@@ -14,6 +14,14 @@
    one-time account sign-in or connection that only she can approve). When that
    happens, give short, simple, click-by-click steps.
 
+4. **Always end every reply with a plain-English summary.** Finish each response
+   with a short wrap-up written in absolutely simple, everyday language that a
+   non-technical person can fully understand (no jargon, no acronyms). The
+   summary must clearly cover three things:
+   - **What was done** — the work that is finished.
+   - **What was not done** — anything skipped, left out, or still incomplete.
+   - **What should be done** — the suggested next steps.
+
 ## What this project is
 The **Airline Demand Monitor** — a website that shows airline passenger demand
 and regional aviation traffic, and keeps itself up to date automatically.
